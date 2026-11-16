@@ -8,7 +8,7 @@
 **Pasar awal:** Indonesia (OJK)  
 **Dokumen terkait:** BRD Insurance Claim Fraud Detection v0.5, PRD Platform Deteksi Fraud Asuransi v0.2, QA Report  
 **Cakupan teknis:** Phase 0/1 thin slice, commercial MVP, dan target-state; profil HA untuk MVP/GA  
-**Stack baseline:** Next.js, Go, PostgreSQL, Redis, Kafka, Kubernetes  
+**Stack baseline:** Next.js, Go, PostgreSQL, Redis, Kafka, Kubernetes; iOS Swift/SwiftUI, Android Kotlin/Jetpack Compose, shared business logic via Kotlin Multiplatform (KMP/KMM)
 **Cloud utama:** Alibaba Cloud Indonesia (Jakarta, `ap-southeast-5`), 3 availability zone
 
 **Reviewer wajib:** CTO, Lead Backend, Lead Frontend, SRE/Platform Lead, Security Architect, Data Architect, QA Lead, Compliance/Legal.
@@ -23,6 +23,7 @@
 |---|---|---|
 | 0.1 | 16 November 2026 | Draft awal: arsitektur logis, microservices Go, Next.js, PostgreSQL, Redis, Kafka, topologi HA multi-AZ, sizing, DR, observability, keamanan, test HA, runbook, ADR, dan traceability ke PRD/BRD |
 | 0.1 (rev. 2) | 17 November 2026 | Strategi deploy eksplisit ke Alibaba Cloud `ap-southeast-5`: landing zone, ACK Pro, ApsaraDB RDS, Tair, ApsaraMQ, OSS WORM/CRR, ALB/WAF/Anti-DDoS, ASM, SLS/ARMS, referensi R36–R50 |
+| 0.1 (rev. 3) | 17 November 2026 | Tambah aplikasi mobile native (Swift/SwiftUI iOS, Kotlin/Jetpack Compose Android) dengan shared business logic KMP/KMM, Clean Architecture/Clean Code, unit test gate semua platform, dan referensi R51–R64 |
 
 ---
 
@@ -36,7 +37,7 @@
 5. Arsitektur Logis
 6. Arsitektur Deployment & High Availability
 7. Desain Layanan Backend (Go)
-8. Desain Frontend (Next.js)
+8. Desain Frontend Web (Next.js) dan Mobile Native (Swift/Kotlin + KMP)
 9. Desain Data
 10. Alur Data & Konsistensi
 11. API & Kontrak Integrasi
@@ -65,13 +66,13 @@
 |---|---|
 | Dokumen | TRD — Platform Deteksi Fraud Asuransi Multi-Lini |
 | Versi | 0.1 |
-| Tanggal | 16 November 2026 |
+| Tanggal | 17 November 2026 |
 | Status | Draft untuk review |
 | Pemilik | Engineering |
 | Target-state | 24 bulan (M0–M24) |
 | Thin slice | BRD v0.5 — Phase 0/1, rules-only, data sintetis, P&C auto/properti |
 | Dokumen acuan | BRD v0.5, PRD v0.2, QA Report |
-| Perubahan | TRD baru; belum mengubah scope PRD/BRD |
+| Perubahan | TRD baru; tambahan channel mobile native (MVP) dan strategi deploy Alibaba Cloud |
 
 **Hierarki dokumen:**
 
@@ -93,6 +94,8 @@ Jika terjadi konflik: **scope/requirement mengikuti PRD/BRD; cara implementasi m
 
 > **Thin slice ≠ commercial MVP.** Thin slice berjalan non-HA untuk alasan biaya dan kecepatan, tetapi **kode, kontrak, dan state harus HA-ready**: stateless, state eksternal, health probes, idempotency, dan tidak menyimpan state di filesystem lokal. TRD ini mendefinisikan HA untuk commercial MVP/GA; thin slice tidak boleh diklaim sebagai produksi HA.
 
+> **Mobile bukan pengganti web.** Aplikasi iOS/Android adalah channel tambahan untuk reviewer/supervisor pada Commercial MVP; tidak mengubah target HA backend dan tidak menambah write-back/auto-denial.
+
 ### 0.3 Source of truth teknis
 
 | Domain | Source of truth | Catatan |
@@ -111,7 +114,8 @@ Jika terjadi konflik: **scope/requirement mengikuti PRD/BRD; cara implementasi m
 
 - Cloud utama: **Alibaba Cloud Indonesia (Jakarta, `ap-southeast-5`)** dengan **3 availability zone** (Jakarta Zone A/B/C) [R36][R37]. Provider alternatif hanya untuk contingency dan harus melalui ADR; seluruh layanan managed dipetakan ke ekuivalen Alibaba Cloud.
 - Jika tenant enterprise memilih private cloud/on-prem, topologi HA direplikasi ke 3 rack/DC dengan komponen self-managed (ACK/kubernetes, Patroni, Redis Sentinel, Kafka, MinIO) dan tetap mengikuti pola failure domain yang sama.
-- Thin slice: Docker Compose, data sintetis, tanpa PII nyata, tanpa internet/API eksternal, tanpa ML/OCR/integrasi/write-back.
+- Thin slice: Docker Compose, data sintetis, tanpa PII nyata, tanpa internet/API eksternal, tanpa ML/OCR/integrasi/write-back. Mobile tidak termasuk thin slice.
+- Mobile (MVP): aplikasi native iOS (Swift/SwiftUI) dan Android (Kotlin/Jetpack Compose) untuk reviewer/supervisor; business logic dibagi lewat KMP/KMM. UI tetap native; bukan Flutter/React Native/Compose Multiplatform.
 - Commercial MVP: P&C auto/properti, rules + baseline ML adapter, OCR basic, 1 integrasi claims.
 - Tidak ada active-active multi-region pada MVP/GA. DR memakai **warm standby** in-country.
 - Tidak ada write-back status klaim sampai Phase 2 dan opt-in tenant.
@@ -129,6 +133,7 @@ TRD dianggap siap untuk implementasi jika:
 6. Backup/restore dan DR diuji, bukan hanya didokumentasikan.
 7. Tidak ada keputusan arsitektur besar yang belum punya ADR.
 8. Dokumen saling mereferensikan dan versi konsisten.
+9. Setiap platform (Go, Next.js, shared KMP, iOS, Android) punya unit test dan coverage gate yang dijalankan di CI.
 
 ### 0.6 Ringkasan keputusan
 
@@ -145,6 +150,9 @@ TRD dianggap siap untuk implementasi jika:
 | ADR-009 | OpenTelemetry + SLS + ARMS Managed Prometheus/Grafana | Accepted |
 | ADR-010 | DR warm standby in-country; RTO 4 jam / RPO 15 menit | Accepted |
 | ADR-011 | Alibaba Cloud sebagai cloud utama; provider lain hanya contingency | Accepted |
+| ADR-012 | Shared business logic memakai Kotlin Multiplatform (KMP/KMM); UI native SwiftUI dan Jetpack Compose | Accepted |
+| ADR-013 | Clean Architecture (presentation/domain/data) dan Clean Code di semua codebase; dependency rule ditegakkan di review/CI | Accepted |
+| ADR-014 | Mobile MVP offline read-only; aksi tulis (triage/note) memerlukan koneksi; tidak ada antrean write offline | Accepted |
 
 ---
 
@@ -154,7 +162,8 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 
 **Bentuk solusi:**
 
-- **Frontend:** Next.js App Router (TypeScript) sebagai UI dan BFF tipis. Tidak ada business logic atau penyimpanan state lokal. Semua instance stateless dan berbagai cache melalui Redis.
+- **Frontend web:** Next.js App Router (TypeScript) sebagai UI dan BFF tipis. Tidak ada business logic atau penyimpanan state lokal. Semua instance stateless dan berbagai cache melalui Redis.
+- **Mobile native:** iOS Swift/SwiftUI dan Android Kotlin/Jetpack Compose. Business logic, validasi, use case, dan repository contract dibagi melalui KMP/KMM; UI, navigasi, biometric, dan secure storage tetap native per platform.
 - **Backend:** microservices Go dengan boundary domain yang jelas. Sinkron melalui REST/JSON (eksternal) dan gRPC opsional (internal); asinkron melalui Kafka. Semua service bisnis ditulis Go; Phase 2 ML serving memakai Go/ONNX, sedangkan training offline boleh Python dan tidak berjalan di production.
 - **Data:** PostgreSQL sebagai system of record; Redis untuk cache/session/rate limit; object storage untuk dokumen dan evidence; Kafka untuk event dan outbox.
 - **HA:** 3 AZ, minimal 3 replica per service, PodDisruptionBudget, topology spread, managed multi-AZ untuk PostgreSQL/Redis/Kafka, backup + PITR, dan DR warm standby in-country.
@@ -164,6 +173,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 **Yang tidak diklaim:**
 
 - Thin slice tidak HA dan tidak multi-tenant.
+- Mobile tidak termasuk thin slice; mobile MVP adalah channel reviewer/supervisor, bukan aplikasi pemegang polis.
 - MVP/GA tidak active-active multi-region.
 - Tidak ada auto-denial klaim; write-back hanya Phase 2 opt-in.
 - Angka kapasitas bukan jaminan performa sampai benchmark dan pilot selesai.
@@ -173,6 +183,9 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | Layer | Pilihan | Status | Alasan |
 |---|---|---|---|
 | Frontend | Next.js App Router | Wajib | SSR/RSC, BFF tipis, ekosistem, self-host |
+| Mobile iOS | Swift 6+ / SwiftUI (native) | Wajib (MVP) | UX native, akses Keychain/Face ID, performa |
+| Mobile Android | Kotlin 2.x / Jetpack Compose (native) | Wajib (MVP) | UX native, Keystore/BiometricPrompt, Compose |
+| Shared mobile logic | Kotlin Multiplatform (KMP/KMM) | Wajib (MVP) | Satu sumber domain/use case; kurangi drift iOS/Android |
 | Backend | Go microservices | Wajib | Performa, concurrency, binary kecil, operasi sederhana |
 | Database | PostgreSQL (ApsaraDB RDS for PostgreSQL) | Wajib | ACID, RLS, partitioning, ekosistem, portabilitas |
 | Cache | Redis (Tair Redis OSS-compatible) | Wajib | Session, cache, rate limit, queue index; multi-AZ HA |
@@ -204,10 +217,12 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | TG-08 | Observability | Metrics, logs, traces, SLO, alert, runbook |
 | TG-09 | Portabilitas | Tidak lock-in; export data/model/config; opsi private cloud |
 | TG-10 | Maintainability | API-first, CI/CD, IaC, contract test, dokumentasi |
+| TG-11 | Kualitas mobile | Crash-free ≥99,5%; cold start p95 <2 detik; unit test gate iOS/Android/KMP |
 
 ### 2.2 Non-goals
 
 - Active-active multi-region; multi-cloud aktif; global load balancing.
+- Aplikasi mobile pemegang polis; mobile offline write; mobile sebagai sistem keputusan.
 - Sharding horizontal di luar PostgreSQL pada MVP.
 - ML/OCR/forensik dokumen di thin slice.
 - Write-back status klaim di MVP.
@@ -297,6 +312,10 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 |---|---|---|
 | Go | 1.24+ (pin di `go.mod`) | Gunakan versi stable yang didukung security patch |
 | Next.js | App Router, versi stable di-pin | TypeScript strict; Node LTS |
+| Swift | Swift 6+ (Xcode stable di-pin) | Strict concurrency; SwiftUI; iOS 17+ |
+| Kotlin | 2.2+ (pin di version catalog) | Kotlin Multiplatform; Android minSdk 26 |
+| KMP | Kotlin Multiplatform stable; Gradle wrapper di-pin | Shared domain/data; UI native |
+| Android | Jetpack Compose BOM stable; target SDK stable | Material 3; edge-to-edge |
 | PostgreSQL | 17+ (18 setelah tersedia di ApsaraDB RDS) | Extension minimal; `pg_stat_statements` |
 | Redis | 7.4+ (Tair Redis OSS-compatible) | TLS; ACL; multi-AZ failover |
 | Kafka | ApsaraMQ for Kafka; 4.x KRaft untuk self-managed | Managed multi-zone; RF 3, minISR 2 |
@@ -325,6 +344,12 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | Frontend data | TanStack Query + Zod | Cache, validation, typed |
 | UI | Tailwind + headless components | Konsisten, accessible |
 | E2E | Playwright | Browser test |
+| Mobile shared | Ktor client, kotlinx.serialization, SQLDelight, kotlinx.coroutines | Satu networking/serialization/domain untuk iOS+Android |
+| iOS UI | SwiftUI; Swift Testing + XCTest | Native, accessibility, testable |
+| Android UI | Jetpack Compose; JUnit5, MockK, Turbine | Native, testable |
+| Mobile DI | Constructor injection + composition root (Hilt Android, Swift AppContainer) | Eksplisit, mudah di-test |
+| Mobile build | Fastlane; Xcode Cloud atau GitHub Actions macOS; Gradle | Signing, TestFlight/Play internal |
+| Mobile security test | OWASP MASVS checklist, MobSF opsional | Static/dynamic analysis |
 | Load | k6 | Load/soak/spike |
 | Chaos | Chaos Mesh atau LitmusChaos | Kubernetes-native |
 | ML serving | ONNX Runtime (Go binding) | Model portable; training offline Python tidak berjalan di production |
@@ -335,6 +360,11 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 /
   apps/
     web/                       # Next.js App Router
+    mobile/
+      ios/                     # Swift/SwiftUI app (Xcode project/workspace)
+      android/                 # Kotlin/Jetpack Compose app
+      shared/                  # KMP/KMM: domain, data, use case, API client
+      build-logic/             # Gradle convention plugins
   services/
     identity/
     admin/                     # MVP: tenant config, entitlement, feature flag
@@ -371,7 +401,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
   docs/
 ```
 
-**Aturan:** `packages/contracts` adalah source of truth kontrak; perubahan harus melalui PR dan contract test. `services/*` tidak boleh mengimpor kode service lain; hanya `packages/*`.
+**Aturan:** `packages/contracts` adalah source of truth kontrak; perubahan harus melalui PR dan contract test. `services/*` tidak boleh mengimpor kode service lain; hanya `packages/*`. `apps/mobile/shared` tidak boleh mengimpor UI platform; iOS/Android hanya boleh bergantung pada API publik shared module. Dependency rule Clean Architecture ditegakkan lewat review, detekt/ktlint, dan SwiftLint.
 
 ### 3.5 Konvensi
 
@@ -394,6 +424,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | Aktor | Peran | Phase |
 |---|---|---|
 | Reviewer | Meninjau alert, mengumpulkan bukti, memberi outcome | Thin slice, MVP |
+| Mobile reviewer/supervisor | Reviewer/supervisor via aplikasi iOS/Android (alert inbox, case detail, triage, push) | MVP |
 | Supervisor | Assign, review kualitas, approve keputusan | Thin slice, MVP |
 | Admin | Tenant, user, role, config, usage | Thin slice, MVP |
 | Finance/Management | Read-only usage/value report/billing export | MVP |
@@ -407,7 +438,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 
 ### 4.2 Batas sistem
 
-**In scope:** ingestion, validasi, rules, scoring, alert/triage, case/evidence, audit, metering, reporting, notification, admin, document AI (Phase 2), ML (Phase 2), integration (Phase 2).
+**In scope:** ingestion, validasi, rules, scoring, alert/triage, case/evidence, audit, metering, reporting, notification, admin, aplikasi mobile native (MVP), document AI (Phase 2), ML (Phase 2), integration (Phase 2).
 
 **Out of scope:** core PAS/claims system, pembayaran, DMS, underwriting pricing, auto-denial, fraud di luar klaim, replacement DMS.
 
@@ -415,7 +446,8 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 
 | Boundary | Di luar | Di dalam | Kontrol |
 |---|---|---|---|
-| Internet → edge | User, browser | Alibaba Cloud WAF, CDN, ALB | TLS, WAF, Anti-DDoS, rate limit |
+| Internet → edge | User, browser, mobile app | Alibaba Cloud WAF, CDN, ALB | TLS, WAF, Anti-DDoS, rate limit |
+| Mobile app → edge | iOS/Android app | WAF, ALB, API | OIDC PKCE, TLS, certificate/app integrity, rate limit |
 | Edge → app | ALB/Envoy | Next.js, Go services | JWT, mTLS, NetworkPolicy |
 | Service → service | Service lain | Namespace | mTLS, authorization, timeout |
 | App → data | Compute | ApsaraDB RDS/PostgreSQL, Tair/Redis, ApsaraMQ/Kafka, OSS | TLS, RAM, RLS, encryption |
@@ -439,6 +471,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | Ingestion | CSV/JSON | API/SFTP/batch | Event/connectors | Event/connectors |
 | Multi-tenant | Tidak | Ya | Ya | Ya |
 | Case management | Basic | Ya | Ya | Ya |
+| Mobile app native | Tidak | Ya (iOS+Android) | Ya | Ya |
 | Graph | Tidak | Basic | Advanced | Advanced |
 | Write-back | Tidak | Tidak | Opt-in | Opt-in |
 | External data | Tidak | Tidak | Ya | Ya |
@@ -452,7 +485,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│                        Client / Browser                            │
+│              Client / Browser / Mobile native (iOS, Android)       │
 └───────────────────────────────┬────────────────────────────────────┘
                                 │ HTTPS
 ┌───────────────────────────────▼────────────────────────────────────┐
@@ -508,7 +541,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | `audit` | Append-only audit, legal hold, export | audit_event | `/v1/audit`, `audit.event.v1` | Thin slice/MVP | 3 |
 | `metering` | Usage event, period close, value report, billing export | usage_record, value_report, billing_export | `/v1/usage`, `usage.recorded.v1` | Thin slice/MVP | 3 |
 | `reporting` | Dashboard, export, scheduled report | materialized view/read model | `/v1/reports`, `report.*` | Thin slice/MVP | 3 |
-| `notification` | Email/webhook/in-app notification | notification, delivery | `/v1/notifications`, `notification.*` | MVP | 3 |
+| `notification` | Email/webhook/in-app/push (APNs/FCM) | notification, delivery, device | `/v1/notifications`, `/v1/devices`, `notification.*` | MVP | 3 |
 | `document` | OCR, forensics, metadata, chain of custody | document, extracted_field, forensic | `/v1/documents`, `document.processed.v1` | Phase 2 | 3 |
 | `entity-resolution` | Matching, Golden Record, relasi pihak/aset | entity, entity_edge, match_decision | `/v1/entities`, `entity.*` | Phase 2 | 3 |
 | `feature-store` | Definisi fitur, online/offline, point-in-time correctness | feature_def, feature_value, feature_snapshot | `/v1/features`, `feature.*` | Phase 2 | 3 |
@@ -1061,9 +1094,28 @@ openapi.yaml
 | Metering immutability | Usage record immutable setelah close; rekonsiliasi 100% | Reconciliation test |
 | UI language | "perlu verifikasi/indikasi", bukan "terbukti/palsu" | Review + automated lint |
 
+### 7.12 Clean Code dan batas domain backend
+
+Clean Code di backend bukan preferensi gaya; ini kontrol maintainability dan testability.
+
+| Aturan | Implementasi | Verifikasi |
+|---|---|---|
+| Dependency rule | `domain` tidak mengimpor HTTP/DB/Kafka; `usecase` bergantung pada port; adapter mengimplementasikan port | Import lint + code review |
+| SOLID | Interface kecil per kebutuhan consumer; constructor injection; tidak ada global state | Review |
+| Batas transaksi | Transaksi dimulai/diakhiri di use case, bukan handler/HTTP | Integration test |
+| Error eksplisit | Error domain bertipe; tidak ada `panic` untuk error yang diharapkan; wrap dengan konteks | `go vet`, staticcheck, test |
+| Fungsi kecil dan bernama domain | Nama intent (`RecordDecision`, `ReconcileUsage`), bukan `Process`/`Handle` generik | Review |
+| Tanpa duplikasi lintas service | Logika bersama ke `packages/*`, bukan copy-paste | Review + coverage |
+| Konkurensi aman | Context propagation; tidak ada goroutine leak; race detector | `go test -race` |
+| Format dan lint | `gofmt`, `go vet`, `staticcheck`, `golangci-lint`, `govulncheck` | CI gate |
+| Dokumentasi publik | Doc comment pada package/exported API; ADR untuk keputusan besar | Lint + review |
+| Definition of done | Kode + unit test + integration test untuk perubahan perilaku; tidak ada PR tanpa test | CI + review |
+
+**Coverage gate backend:** ≥80% untuk package `domain`/`usecase`; ≥70% overall; turun di bawah gate = build gagal. Coverage bukan target angka; test harus menguji perilaku dan guardrail domain (§7.11), bukan sekadar mengejar baris.
+
 ---
 
-## 8. Desain Frontend (Next.js)
+## 8. Desain Frontend Web (Next.js) dan Mobile Native (Swift/Kotlin + KMP)
 
 ### 8.1 Arsitektur
 
@@ -1103,7 +1155,7 @@ openapi.yaml
 | Streaming | Proxy tidak buffer; `X-Accel-Buffering: no` [R12] |
 | Static assets | CDN + assetPrefix; immutable |
 
-### 8.4 Keamanan frontend
+### 8.4 Keamanan frontend web
 
 - CSP strict; nonce; no inline script.
 - Cookie HttpOnly/Secure/SameSite; CSRF token untuk mutation.
@@ -1135,6 +1187,159 @@ openapi.yaml
 | Queue page | <3 detik |
 | Alert → case | ≤3 klik |
 | Training | ≤1 hari |
+
+### 8.7 Keputusan dan scope mobile
+
+| Keputusan | Pilihan | Alasan |
+|---|---|---|
+| UI iOS | Swift 6 + SwiftUI | Native UX/accessibility; akses Keychain, Face ID/Touch ID, APNs |
+| UI Android | Kotlin + Jetpack Compose | Native UX; Keystore, BiometricPrompt, FCM |
+| Shared logic | Kotlin Multiplatform (KMP/KMM) | Satu domain/use case/validasi untuk iOS+Android; mengurangi drift |
+| UI sharing | Tidak (bukan Compose Multiplatform/Flutter/React Native) | Kontrol native, performa, kepatuhan platform |
+| Arsitektur | Clean Architecture + MVVM/MVI | Testability, dependency rule, batas domain jelas |
+| Offline | Read-only cache | Mencegah konflik dan write-back yang tidak sah |
+| Distribusi | App Store/Play internal + TestFlight | Beta terkontrol; signing terkelola |
+
+**Referensi desain:** Swift/SwiftUI [R51][R52], Kotlin/KMP [R54][R55], Jetpack Compose [R56], Clean Architecture [R58].
+
+**Istilah:** KMM (Kotlin Multiplatform Mobile) adalah subset dari KMP; TRD memakai "KMP/KMM" agar eksplisit bahwa yang dibagi adalah business logic, bukan UI.
+
+**Scope mobile MVP (reviewer/supervisor):**
+
+- Login OIDC + MFA, biometrik untuk re-auth sesi.
+- Alert inbox dengan filter severity/status, pull-to-refresh, push notification.
+- Case detail read-only: ringkasan klaim, alasan/indikasi, audit ringkas, evidence metadata.
+- Aksi triage terbatas: assign ke diri sendiri, escalate, tambah catatan (dengan idempotency key); bukan keputusan akhir dan bukan write-back klaim.
+- Offline read-only untuk alert/case yang sudah di-cache.
+- Deep link dari push ke alert/case; tidak ada PII di payload push.
+
+**Non-goals mobile MVP:** aplikasi pemegang polis, upload dokumen, offline write, keputusan otomatis, tablet-specific layout, MDM/kiosk.
+
+### 8.8 Clean Architecture mobile
+
+```
+┌──────────────────────────── Presentation ────────────────────────────┐
+│ SwiftUI (iOS) / Jetpack Compose (Android)                            │
+│ View + ViewModel/State; navigasi; formatting platform                │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │ memanggil use case (KMP)
+┌───────────────────────────────▼──────────────────────────────────────┐
+│ Domain (KMP)                                                         │
+│ Entity, value object, use case, repository contract, error domain    │
+│ Tidak tahu HTTP, DB, SwiftUI, Compose, atau Android framework        │
+└───────────────────────────────┬──────────────────────────────────────┘
+                                │ port diimplementasikan adapter
+┌───────────────────────────────▼──────────────────────────────────────┐
+│ Data (KMP) + Platform adapters                                       │
+│ Repository impl, Ktor, DTO/mapper, SQLDelight, secure storage, push  │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+| Layer | Isi | Boleh bergantung pada | Test |
+|---|---|---|---|
+| Presentation | View, ViewModel, UI state, navigasi | Domain (use case), platform UI | Swift Testing/XCTest, JUnit5/Compose test |
+| Domain | Entity, use case, aturan validasi, repository interface | Tidak ada (pure Kotlin) | `kotlin.test` + coroutines-test |
+| Data | Repository impl, API client, cache, mapper | Domain, Ktor, SQLDelight | MockEngine, in-memory driver |
+| Platform | Keychain/Keystore, biometric, push, connectivity, clock | Framework platform | Unit/integration platform |
+
+**Aturan dependency:** panah hanya mengarah ke dalam (Presentation → Domain ← Data). Domain tidak boleh mengimpor DTO, Ktor, SQLDelight, `Foundation`, atau `android.*`. Use case adalah satu intent bisnis dan mengembalikan `Result`/sealed error, bukan exception mentah. Pola ini mengikuti Clean Architecture [R58] dan panduan arsitektur Android [R57].
+
+**State dan UI:** MVVM dengan unidirectional data flow. iOS memakai `@Observable`/`@MainActor`; Android memakai `StateFlow` + `collectAsStateWithLifecycle`. View tidak mengandung aturan bisnis; validasi dan keputusan ada di use case. Error dipetakan ke `MobileError` (network, auth, conflict, validation, server) agar kedua platform menampilkan perilaku yang sama.
+
+**Dependency injection:** constructor injection; composition root di platform (Hilt untuk Android, `AppContainer` untuk iOS). Tidak ada service locator global di domain. Semua dependency dapat diganti fake di unit test.
+
+### 8.9 Batas kode yang dibagi (KMP)
+
+| Dibagi di KMP | Tetap native per platform |
+|---|---|
+| Entity, value object, enum reason/status | View, layout, navigasi, animasi |
+| Use case dan validasi | Keychain/Keystore dan biometric prompt |
+| Repository contract + implementasi | Permission, push token registration, background task |
+| Ktor client, DTO, serialization, error mapping | Secure storage, certificate pinning trust store |
+| Format tanggal/uang, pagination, ETag/delta sync | Deep link handling, app lifecycle |
+| Auth orchestration (PKCE flow state) | Browser session (ASWebAuthenticationSession/Custom Tabs) |
+| Analytics event contract (tanpa PII) | Crash reporting SDK, app integrity |
+
+**Interop:** framework KMP diekspor sebagai XCFramework static. `suspend`/`Flow` dijembatani ke Swift dengan SKIE (opsional) atau wrapper `async`/callback yang diuji [R61]; Swift 6 strict concurrency dan `Sendable` wajib. Networking memakai Ktor [R59]; cache lokal memakai SQLDelight [R60]. Tipe platform (mis. `NSDate`, `android.content.Context`) tidak bocor ke domain.
+
+**expect/actual minimal:** `SecureStorage`, `TokenStore`, `BiometricAuthenticator`, `ConnectivityObserver`, `Clock`, `DeviceInfo`, `PushTokenProvider`, `Logger`. Setiap `actual` punya test platform atau integration test.
+
+### 8.10 iOS (Swift/SwiftUI)
+
+- **Target:** iOS 17+; Swift 6 strict concurrency; Xcode stable dipin di CI.
+- **Pola:** SwiftUI + MVVM; `@Observable` state; `NavigationStack`; deep link via `onOpenURL`; scene phase untuk refresh.
+- **Auth:** OIDC Authorization Code + PKCE melalui `ASWebAuthenticationSession`; tidak ada client secret di app; access token short-lived; refresh rotation.
+- **Token storage:** Keychain (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`); tidak pernah di `UserDefaults`.
+- **Biometrik:** `LocalAuthentication` (Face ID/Touch ID) sebagai re-auth; fallback passcode; perubahan enrollment memaksa login ulang [R62].
+- **Networking:** Ktor Darwin engine di shared module; ATS aktif; TLS 1.2+; certificate pinning opsional dengan rencana rotasi.
+- **Push:** APNs; payload hanya ID dan tipe event; data diambil setelah autentikasi.
+- **Background:** refresh terbatas; tidak ada sinkronisasi write di background.
+- **Test:** Swift Testing [R53] untuk ViewModel/use case wrapper; XCTest untuk UI critical path; snapshot test opsional.
+
+### 8.11 Android (Kotlin/Jetpack Compose)
+
+- **Target:** `minSdk 26`; `targetSdk` stable; Kotlin 2.x; Compose BOM dipin; Material 3; edge-to-edge.
+- **Pola:** Compose + MVVM/MVI; `StateFlow`; `collectAsStateWithLifecycle`; navigation Compose; deep link.
+- **Auth:** OIDC PKCE via Custom Tabs; tidak ada client secret; refresh rotation.
+- **Token storage:** Android Keystore + enkripsi (Tink/Keystore); tidak ada token di SharedPreferences plaintext [R63].
+- **Biometrik:** `BiometricPrompt` device-native; fallback device credential; enrollment berubah → login ulang.
+- **Networking:** Ktor OkHttp engine di shared module; cleartext dimatikan; network security config; pinning opsional.
+- **Push:** FCM; payload minimal; notification channel per severity; deep link.
+- **Test:** JUnit5 + MockK + Turbine untuk ViewModel; Compose UI test untuk alur kritis; Robolectric untuk platform adapter tertentu.
+
+### 8.12 Data, offline, dan sinkronisasi
+
+- **Server adalah source of truth.** Mobile tidak menyimpan keputusan final atau status klaim sebagai otoritas.
+- **Cache read-only:** alert inbox, case summary, reason code, audit ringkas; TTL dan ETag/If-None-Match; delta sync dengan cursor.
+- **Local DB:** SQLDelight; enkripsi database jika memuat PII (SQLCipher/Keystore-derived key); purge saat logout, ganti tenant, atau remote wipe.
+- **Tidak ada write offline di MVP.** Aksi triage/catatan memerlukan koneksi; UI menampilkan status offline dan menonaktifkan aksi tulis.
+- **Idempotency:** action mengirim `Idempotency-Key`; retry aman; konflik 409 ditampilkan, server menang.
+- **Push:** payload hanya `type`, `id`, `tenant_hint`; tidak ada nama pemegang polis, NIK, atau nominal.
+- **Tenant switch:** cache dan token dihapus; tidak ada data lintas tenant di disk.
+- **Ukuran cache:** dibatasi (mis. 50 MB) dan dihapus saat storage pressure; tidak menyimpan dokumen penuh.
+
+### 8.13 Keamanan mobile
+
+- **Baseline:** OWASP MASVS L1 untuk MVP, target L2 untuk GA [R64].
+- **Auth:** PKCE, tidak ada client secret; token di secure storage; refresh rotation; revoke saat logout; idle timeout mengikuti kebijakan sesi.
+- **Transport:** TLS 1.2+; ATS/network security config; certificate pinning opsional (GA) dengan rotasi dan fallback terkontrol.
+- **App integrity:** Play Integrity (Android) dan App Attest (iOS) sebagai sinyal risiko untuk aksi sensitif; bukan satu-satunya kontrol.
+- **Device risk:** jailbreak/root detection sebagai sinyal; jangan memblokir total tanpa jalur dukungan.
+- **Data leakage:** screenshot protection/blur untuk case detail; app switcher blur; disable backup untuk token; no PII di log/analytics/crash report.
+- **Clipboard:** jangan izinkan copy NIK/nominal penuh; redaksi default.
+- **Signing:** kunci signing di KMS/secret manager; rotasi; tidak ada keystore di repo.
+- **Review:** MobSF/static analysis + checklist MASVS di CI; pentest mobile sebelum pilot.
+
+### 8.14 Observability, performa, dan aksesibilitas mobile
+
+| Metrik | Target |
+|---|---|
+| Cold start p95 | <2 detik |
+| Screen render p95 | <1 detik setelah data |
+| API p95 dari mobile | <2 detik |
+| Crash-free sessions | ≥99,5% |
+| ANR rate (Android) | <0,5% |
+| Sync lag (push → inbox) | <60 detik |
+| Ukuran app | iOS <60 MB; Android <40 MB (target, verifikasi) |
+
+- **Telemetry:** event tanpa PII; `correlation_id` dari API; crash/ANR ke ARMS RUM/mobile monitoring jika tersedia di region, atau Sentry self-hosted in-country (ADR).
+- **Dashboard:** crash rate, API error, auth failure, push delivery, sync lag, versi app yang beredar.
+- **Feature flag/kill switch:** matikan fitur mobile bermasalah tanpa release baru.
+- **Aksesibilitas:** Dynamic Type (iOS), font scaling (Android), VoiceOver/TalkBack, kontras, target sentuh 44 pt/48 dp, label Bahasa Indonesia.
+- **Degraded UX:** banner offline, retry manual, data bertanda "terakhir diperbarui"; tidak ada blank screen.
+
+### 8.15 Build, signing, dan distribusi mobile
+
+| Platform | Build | Distribusi | Gate |
+|---|---|---|---|
+| iOS | Xcode stable; SwiftPM; Fastlane; GitHub Actions macOS atau Xcode Cloud | TestFlight → App Store | Unit test, snapshot, signing, privacy manifest |
+| Android | Gradle wrapper; version catalog; Fastlane | Play internal → production | Unit test, lint, Compose test, signing |
+| Shared KMP | Gradle; XCFramework; test semua target | Internal Maven (jika multi-repo) | `allTests`, API check, binary compatibility |
+
+- Versi build dari git SHA; build number monoton; changelog otomatis.
+- Signing credential di secret manager; tidak pernah di repo; akses terbatas dan diaudit.
+- Release mobile tidak boleh bergantung pada deploy backend yang belum backward-compatible; API versioning `/v1` dan feature flag wajib.
+- Rollback mobile tidak instan (store review); karena itu kill switch server-side dan backward compatibility adalah kontrol utama.
 
 ---
 
@@ -1472,6 +1677,9 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 | GET | `/v1/usage` | Usage record | Thin slice |
 | GET | `/v1/reports/value` | Value report | Thin slice |
 | GET | `/v1/billing/export` | Billing export | Thin slice |
+| POST | `/v1/devices` | Registrasi push token + platform | MVP |
+| DELETE | `/v1/devices/{id}` | Hapus device saat logout/remote wipe | MVP |
+| GET | `/v1/sync/alerts` | Delta sync alert untuk mobile (cursor + ETag) | MVP |
 | POST | `/v1/documents` | Upload dokumen | Phase 2 |
 | GET | `/v1/scores/{claim}` | ML score | Phase 2 |
 | POST | `/v1/connectors` | Integrasi | Phase 2 |
@@ -1493,7 +1701,9 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 
 - Gateway: TLS, WAF, JWT, rate limit, routing, request size, timeout.
 - BFF: agregasi read-only untuk UI; tidak menyimpan business state.
-- Timeout budget: gateway 3s; BFF 2,5s; service 2s.
+- Mobile memanggil API `/v1` langsung melalui gateway (tanpa BFF web); kontrak sama dengan web; tidak ada endpoint khusus yang melemahkan authorization.
+- Timeout budget: gateway 3s; BFF 2,5s; service 2s; mobile tetap memakai budget yang sama.
+- Pagination cursor + ETag wajib untuk endpoint mobile; respons mobile dibatasi ukuran (field ringkas, tanpa dokumen penuh).
 - Circuit breaker per upstream.
 - Retry hanya GET/idempotent.
 - Response cache hanya untuk public/static.
@@ -1526,6 +1736,7 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 ### 12.2 Identity dan authorization
 
 - OIDC Authorization Code + PKCE; MFA untuk admin/supervisor [R31].
+- Mobile: PKCE tanpa client secret; token di Keychain/Keystore; biometrik sebagai re-auth, bukan pengganti MFA.
 - JWT short-lived (≤15 menit); refresh rotation; revoke.
 - RBAC: reviewer, supervisor, admin, finance read-only, auditor.
 - ABAC: tenant, line, region, case assignment.
@@ -1567,7 +1778,7 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 
 ### 12.6 Application security
 
-- OWASP ASVS L2 [R26].
+- OWASP ASVS L2 [R26]; mobile memakai OWASP MASVS L1 (MVP) → L2 (GA) [R64].
 - Input validation; output encoding; parameterized query.
 - File upload: MIME + magic bytes + size + extension; antivirus; sandbox.
 - CSV injection escape.
@@ -1671,6 +1882,7 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 | Batch | Progress, duration, rejects, backlog |
 | Business | Claims, alerts, decisions, queue age |
 | Tenant | Usage, quota, value report |
+| Mobile | Crash/ANR, API error, auth failure, push delivery, sync lag, versi app |
 | Security | Auth failures, WAF, audit anomalies |
 
 **Alerting:** multi-window burn rate (1h/6h/3d); page only for SLO/user impact; ticket for capacity. Runbook link di setiap alert.
@@ -1701,6 +1913,7 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 - Data quality: rejects/duplicates.
 - Rule pack version/determinism.
 - Tenant usage/quota.
+- Mobile: push delivery rate, inbox open rate, sync lag, crash-free sessions; tidak ada PII.
 
 ---
 
@@ -1712,8 +1925,8 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 |---|---:|---|
 | Klaim/tahun per tenant Enterprise | 10.000.000 | PRD NFR-3 |
 | Aggregate design envelope | 50.000.000/tahun | Asumsi 5 tenant Enterprise |
-| Concurrent users | 1.000 | PRD NFR-3 |
-| Peak API | 500 rps; burst 1.000 rps 60s | Asumsi 0,5 req/s/user + burst |
+| Concurrent users | 1.000 | PRD NFR-3; termasuk ±250 reviewer mobile aktif |
+| Peak API | 500 rps; burst 1.000 rps 60s | Asumsi 0,5 req/s/user + burst; mobile memakai push, bukan polling |
 | Batch stress | 50.000 klaim/90s | BRD NFR-01 |
 | Batch target | 1.000.000 klaim/4h | PRD NFR-1 |
 | Dokumen | 25% klaim × 2 × 1 MB | Asumsi |
@@ -1827,6 +2040,7 @@ Sisakan 20% untuk admin/maintenance. Jangan `max_connections` besar tanpa pool.
 | Tair failover | <60 detik | Wajib GA |
 | ApsaraMQ broker failure | no loss acked; lag recover | Wajib GA |
 | DR drill | RTO <4h; RPO <15m | Wajib GA |
+| Mobile cold start / sync | p95 <2s; push→inbox <60s | Wajib MVP |
 
 ### 14.7 Cost guardrails
 
@@ -1939,17 +2153,17 @@ Akun cloud terpisah; VPC terpisah; IAM least privilege; tidak ada data prod di d
 
 ### 16.2 Pipeline
 
-1. Lint/format/typecheck.
-2. Unit test + coverage gate.
-3. SAST + secret scan + dependency scan.
+1. Lint/format/typecheck semua platform: Go (`golangci-lint`), web (`eslint`/`tsc`), KMP (`detekt`/`ktlint`), iOS (`SwiftLint`), Android (`lint`).
+2. Unit test + coverage gate: Go, web, KMP shared, iOS, Android.
+3. SAST + secret scan + dependency scan; mobile MASVS checklist/MobSF.
 4. Build image; SBOM; Trivy; Cosign sign.
-5. Contract test (OpenAPI/event schema).
-6. Integration test (Testcontainers).
-7. Push image + chart.
-8. Argo CD sync staging.
-9. E2E/load/chaos staging.
+5. Contract test (OpenAPI/event schema) termasuk client KMP.
+6. Integration test (Testcontainers); mobile API contract test dengan MockEngine.
+7. Push image + chart; build mobile artifact (unsigned/signed internal).
+8. Argo CD sync staging; distribusi mobile ke TestFlight/Play internal.
+9. E2E/load/chaos staging; mobile smoke di device farm.
 10. Manual approval prod.
-11. Argo Rollouts canary prod.
+11. Argo Rollouts canary prod; rollout mobile bertahap.
 12. Smoke + SLO analysis; promote/rollback.
 
 ### 16.3 GitOps
@@ -1995,16 +2209,25 @@ Akun cloud terpisah; VPC terpisah; IAM least privilege; tidak ada data prod di d
 
 ### 16.8 Release checklist
 
-- [ ] Tests lulus; coverage.
-- [ ] Security scan; no critical/high.
-- [ ] Contract test.
+- [ ] Tests lulus; coverage gate semua platform (Go, web, KMP, iOS, Android).
+- [ ] Security scan; no critical/high; MASVS checklist mobile.
+- [ ] Contract test; client KMP kompatibel dengan `/v1`.
 - [ ] Migration reviewed.
 - [ ] Runbook updated.
-- [ ] Dashboard/alert updated.
+- [ ] Dashboard/alert updated (termasuk mobile).
 - [ ] Capacity checked.
-- [ ] Rollback tested.
+- [ ] Rollback tested; kill switch mobile disiapkan.
 - [ ] Change log/comms.
 - [ ] Approval.
+
+### 16.9 Mobile release
+
+- **Versioning:** build number monoton; versi minimum yang didukung (N-2) didefinisikan; API backward-compatible.
+- **Staged rollout:** Play staged rollout dan iOS phased release; pantau crash/API error per versi.
+- **Kill switch:** fitur mobile dapat dimatikan server-side tanpa release.
+- **Signing:** kunci di secret manager/KMS; akses terbatas; audit.
+- **Store review:** buffer waktu di milestone; privacy manifest (iOS) dan data safety form (Android) wajib.
+- **Rollback:** tidak ada rollback instan di store; mitigasi via feature flag, remote config, dan API compatibility.
 
 ---
 
@@ -2014,7 +2237,7 @@ Akun cloud terpisah; VPC terpisah; IAM least privilege; tidak ada data prod di d
 
 | Level | Cakupan | Tool |
 |---|---|---|
-| Unit | Logic, rules, validation | `go test`, Vitest |
+| Unit | Logic, rules, validation, use case | `go test`, Vitest, `kotlin.test`, Swift Testing, JUnit5 |
 | Integration | DB/Redis/Kafka/object storage | Testcontainers |
 | Contract | OpenAPI/event schema | Schemathesis, Pact |
 | E2E | Queue → decision → audit | Playwright |
@@ -2022,6 +2245,9 @@ Akun cloud terpisah; VPC terpisah; IAM least privilege; tidak ada data prod di d
 | Chaos | Pod/node/AZ/dependency | Chaos Mesh/Litmus [R24] |
 | Security | SAST/DAST/pentest | Semgrep, ZAP, external |
 | DR | Restore/failover | Runbook drill |
+| Mobile unit | Use case, ViewModel, mapper, error | Swift Testing, JUnit5/MockK/Turbine |
+| Mobile UI | Alur kritis, accessibility | XCTest, Compose UI test |
+| Mobile device | OS/version matrix, push, biometric | Device farm/manual matrix |
 
 ### 17.2 Functional/acceptance
 
@@ -2096,6 +2322,25 @@ Akun cloud terpisah; VPC terpisah; IAM least privilege; tidak ada data prod di d
 - Output: timeline, gap, action, runbook update.
 - Frekuensi: sebelum GA, lalu quarterly.
 
+### 17.9 Unit test semua platform dan coverage gate
+
+| Platform | Framework | Fokus wajib | Gate |
+|---|---|---|---|
+| Go backend | `testing` + testify; testcontainers; `-race` | Aturan domain, use case, idempotency, error mapping, RLS/tenant guard | ≥80% domain/usecase; ≥70% overall |
+| Next.js web | Vitest + React Testing Library | Hook, form validation, error/degraded state, accessibility | ≥70% lines; critical flow E2E |
+| KMP shared | `kotlin.test`, coroutines-test, Turbine, Ktor MockEngine, SQLDelight in-memory | Use case, mapper, ETag/delta sync, error taxonomy, auth state | ≥80% domain/usecase |
+| iOS | Swift Testing + XCTest | ViewModel, auth/biometric state, deep link, offline state | ≥70% ViewModel/presentation |
+| Android | JUnit5 + MockK + Turbine + Compose UI test | ViewModel, auth/biometric state, deep link, offline state | ≥70% ViewModel/presentation |
+
+**Aturan test kualitas:**
+
+- Test deterministik: waktu, random, dan network di-inject; tidak ada sleep.
+- Satu test menguji satu perilaku; nama menjelaskan kondisi dan hasil.
+- Guardrail domain (§7.11) punya test eksplisit: no auto-denial, no auto-clear, label isolation, tenant isolation.
+- Contract test OpenAPI dijalankan terhadap client KMP dan web; perubahan breaking gagal di CI.
+- Coverage turun di bawah gate = build gagal; pengecualian harus disetujui Lead + Security dan dicatat.
+- Test mobile berjalan di CI Linux (KMP/Android) dan macOS (iOS); device farm untuk smoke sebelum rilis.
+
 ---
 
 ## 18. Runbook Operasional
@@ -2125,6 +2370,7 @@ Akun cloud terpisah; VPC terpisah; IAM least privilege; tidak ada data prod di d
 | Tenant isolation | Suspected breach | Immediate |
 | Data breach | PII leak | Immediate |
 | Restore | Corruption | <2 jam |
+| Mobile release incident | Crash/ANR spike, API incompatibility | <1 jam mitigasi |
 
 ### 18.3 DB failover runbook
 
@@ -2224,6 +2470,15 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 4. Switch; smoke.
 5. Postmortem.
 
+### 18.15 Mobile release incident
+
+1. Identifikasi versi/OS/device yang terdampak dari crash/ANR dan API error.
+2. Aktifkan kill switch fitur atau remote config; jangan menunggu release baru.
+3. Pastikan backend tetap backward-compatible; rollback server hanya jika kontrak `/v1` rusak.
+4. Untuk crash kritis/keamanan: siapkan hotfix, minta expedited review, dan komunikasikan ke tenant.
+5. Pantau crash-free sessions, auth failure, dan push delivery setelah mitigasi.
+6. Postmortem; tambahkan test/device matrix yang terlewat.
+
 ---
 
 ## 19. Alternatif Teknologi & ADR
@@ -2242,6 +2497,10 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | ADR-008 | ASM (Istio-based) | Linkerd, Cilium, no mesh | mTLS, traffic | Kompleksitas |
 | ADR-009 | OTel stack | Vendor APM | Portabilitas | Ops |
 | ADR-010 | Warm standby DR | Active-active | Biaya, residensi | RTO 4 jam |
+| ADR-011 | Alibaba Cloud sebagai cloud utama | Provider lain | Residensi, layanan managed | Lock-in |
+| ADR-012 | KMP/KMM untuk shared business logic; UI native | Duplikasi logic per platform, Flutter/React Native, Compose Multiplatform UI | Satu domain, UI native, testable | Interop Swift/Kotlin, build kompleks |
+| ADR-013 | Clean Architecture + Clean Code di semua codebase | Layer bebas, arsitektur per tim | Testability, dependency rule | Disiplin review |
+| ADR-014 | Mobile offline read-only | Offline write dengan antrean, online-only | Mencegah konflik dan write tidak sah | UX offline terbatas |
 
 ### 19.2 Perbandingan detail
 
@@ -2306,6 +2565,15 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | Linkerd | Ringan | Fitur | MVP |
 | Cilium | eBPF, network | mTLS terbatas | Network-centric |
 
+**Mobile**
+
+| Opsi | Pro | Kontra | Kapan |
+|---|---|---|---|
+| Native UI + KMP shared logic | UX/security native, satu domain, testable | Dua codebase UI, interop Swift/Kotlin | Default |
+| Native UI + duplikasi logic | Kontrol penuh per platform | Drift aturan/validasi, biaya test 2× | Tim terpisah tanpa KMP |
+| Flutter/React Native | Satu codebase UI | UX/security tidak native, plugin risk | Non-regulated, tim kecil |
+| Compose Multiplatform UI | Satu UI Kotlin | iOS maturity/aksesibilitas, bukan native SwiftUI | Eksperimen, bukan default |
+
 ### 19.3 Revisit trigger
 
 - Tenant >10 atau aggregate >50M klaim/tahun → evaluasi sharding/partition.
@@ -2315,6 +2583,8 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 - DR RTO tidak tercapai → active-active/in-region DR.
 - Team tidak mampu operasi Kafka → NATS/managed.
 - Compliance cross-border → DR topology.
+- Crash-free mobile <99,5% atau ANR >0,5% → prioritaskan stabilitas sebelum fitur.
+- Interop KMP bermasalah berulang → evaluasi wrapper/SKIE atau pemisahan modul.
 
 ### 19.4 Portability dan exit
 
@@ -2346,6 +2616,10 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | TR-13 | Supply chain | Compromise | SBOM, sign, scan | Security |
 | TR-14 | Model/OCR drift | False positive | Monitoring, fallback | Data |
 | TR-15 | Batch SLA | Demo gagal | Benchmark, pool, optimize | Eng |
+| TR-16 | KMP interop Swift/Kotlin (Flow, error, concurrency) | Bug platform-specific, crash | Wrapper teruji, SKIE opsional, Swift 6 concurrency review | Mobile Lead |
+| TR-17 | Store review/penolakan aplikasi | Release tertunda | Privacy manifest, data safety, review awal, buffer milestone | Mobile Lead |
+| TR-18 | Fragmentasi device/OS | Bug tidak terdeteksi | Device matrix, device farm, staged rollout | QA |
+| TR-19 | Kebocoran data via cache/log mobile | Data leak | Secure storage, no PII log, cache purge, MASVS test | Security |
 
 **Residual risk:** risiko yang tersisa setelah mitigasi harus dicatat di PRD §16.2/BRD §16.2. Tidak ada risiko yang "diterima" tanpa owner dan review.
 
@@ -2360,8 +2634,8 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | Phase | Timeline | Deliverable | Exit |
 |---|---|---|---|
 | 0/1 Thin slice | Hackathon | Docker Compose; 6 service; rules A–G; queue; case; audit; metering; 50k/90s | AC BRD; demo |
-| Commercial MVP | M0–M9 | K8s 3 AZ; managed DB/Redis/Kafka; multi-tenant; ML adapter; OCR basic; 1 integrasi; HA | 99.9%; pilot |
-| GA | M9–M15 | DR; 99.95%; SOC 2 readiness; scale | 2 paid; HA/DR drill |
+| Commercial MVP | M0–M9 | K8s 3 AZ; managed DB/Redis/Kafka; multi-tenant; ML adapter; OCR basic; 1 integrasi; HA; mobile iOS+Android (alert/triage, KMP shared) | 99.9%; pilot |
+| GA | M9–M15 | DR; 99.95%; SOC 2 readiness; scale; mobile MASVS L2 | 2 paid; HA/DR drill |
 | Phase 2 | M9–M15 | Jiwa/kesehatan; graph; document advanced; external | Multi-line |
 | Phase 3 | M15–M24 | GenAI; consortium; ASEAN; active-active review | 10+ tenant |
 
@@ -2371,6 +2645,7 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 |---|---|---|
 | Platform | K8s, IaC, CI/CD, observability | SRE |
 | Frontend | Next.js, UX, accessibility | FE Lead |
+| Mobile | SwiftUI, Compose, KMP shared, store release | Mobile Lead |
 | Backend | Go services, rules, case, audit | BE Lead |
 | Data | PostgreSQL, Kafka, Redis, object storage | Data |
 | Security | Auth, RLS, KMS, pentest | Security |
@@ -2383,14 +2658,15 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 |---|---|
 | M1 Architecture approved | TRD sign-off; ADR |
 | M2 Thin slice | 50k/90s; determinism; queue; audit; metering |
-| M3 MVP HA | 3 AZ; failover; load; multi-tenant |
-| M4 Pilot | 2 design partner; SLO; security |
+| M3 MVP HA | 3 AZ; failover; load; multi-tenant; mobile internal build |
+| M4 Pilot | 2 design partner; SLO; security; mobile di TestFlight/Play internal |
 | M5 GA | 99.95%; DR; SOC 2 readiness |
 | M6 Scale | Multi-line; 10+ tenant |
 
 ### 21.4 Definition of done
 
 - Kode, test, docs, runbook.
+- Unit test lulus + coverage gate di semua platform (Go, web, KMP, iOS, Android).
 - SLO/dashboard/alert.
 - Security scan; no critical/high.
 - Load/chaos pass.
@@ -2407,6 +2683,7 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 - Design partner data/labels.
 - Legal/DPA/DPIA.
 - Team hiring/training.
+- Apple Developer/Google Play account; signing; store review.
 
 ---
 
@@ -2426,8 +2703,11 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | OQ-10 | Budget? | Sizing | Finance | `TBD` |
 | OQ-11 | On-prem hardware? | Private cloud | CTO | `TBD` |
 | OQ-12 | SLA tenant? | SLO | Product | 99.9/99.95 |
+| OQ-13 | Cakupan mobile? | Scope/UX | Product | Reviewer/supervisor MVP; app pemegang polis `TBD` |
+| OQ-14 | Offline write? | Sinkronisasi/konflik | Eng | Tidak (read-only) |
+| OQ-15 | Distribusi enterprise/MDM? | Operasi/security | Security | App Store/Play dulu; MDM `TBD` |
 
-**Asumsi:** 3 AZ; managed services; data residency Indonesia; no active-active; thin slice non-HA; team 9 engineer; pilot 2 insurer.
+**Asumsi:** 3 AZ; managed services; data residency Indonesia; no active-active; thin slice non-HA; mobile native iOS/Android dengan KMP; team 9 engineer (termasuk 2 mobile); pilot 2 insurer.
 
 ---
 
@@ -2517,6 +2797,26 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | LLM gateway | `llm-gateway` | Phase 3 |
 | Integration service | `integration` | Phase 2 |
 
+### 23.5 Mobile requirement → TRD
+
+| ID | Requirement | TRD | Verifikasi |
+|---|---|---|---|
+| M-01 | iOS native Swift/SwiftUI | §8.7, §8.10 | Review + XCTest |
+| M-02 | Android native Kotlin/Compose | §8.7, §8.11 | Review + Compose test |
+| M-03 | Shared business logic KMP/KMM | §8.8, §8.9 | `allTests` + contract test |
+| M-04 | Clean Architecture + Clean Code mobile | §8.8, §19.1 | Import lint + review |
+| M-05 | Clean Code backend | §7.12 | Lint + coverage gate |
+| M-06 | Unit test semua platform | §17.9, §16.2 | CI coverage report |
+| M-07 | Offline read-only | §8.12 | Test offline mode |
+| M-08 | Auth aman + biometrik native | §8.10, §8.11, §8.13 | MASVS test + pentest |
+| M-09 | Push notification tanpa PII | §8.12, §8.14 | Payload test |
+| M-10 | Distribusi dan staged rollout | §8.15, §16.9 | TestFlight/Play internal |
+
+### 23.6 Traceability catatan
+
+- Requirement mobile di atas adalah tambahan platform, bukan perubahan scope produk; tidak ada write-back atau auto-denial.
+- Jika PRD/BRD menambah requirement mobile formal, ID baru harus dipetakan ke tabel ini dan ke acceptance test.
+
 ---
 
 ## 24. Referensi
@@ -2575,6 +2875,20 @@ Sumber diakses 16–17 November 2026. Referensi eksternal adalah bahan best prac
 | R48 | OSS — Cross-region replication (CRR/RTC) | https://www.alibabacloud.com/help/en/oss/user-guide/cross-region-replication |
 | R49 | Alibaba Cloud ARMS — Overview | https://www.alibabacloud.com/help/en/arms/product-overview/what-is-arms |
 | R50 | Simple Log Service (SLS) — Overview | https://www.alibabacloud.com/help/en/sls/product-overview/what-is-log-service |
+| R51 | Swift — Documentation | https://www.swift.org/documentation/ |
+| R52 | Apple — SwiftUI | https://developer.apple.com/documentation/swiftui |
+| R53 | Apple — Swift Testing | https://developer.apple.com/documentation/testing |
+| R54 | Kotlin — Documentation | https://kotlinlang.org/docs/home.html |
+| R55 | Kotlin — Multiplatform | https://kotlinlang.org/docs/multiplatform.html |
+| R56 | Android — Jetpack Compose | https://developer.android.com/develop/ui/compose |
+| R57 | Android — App architecture guide | https://developer.android.com/topic/architecture |
+| R58 | Clean Architecture (Robert C. Martin) | https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html |
+| R59 | Ktor — Documentation | https://ktor.io/docs/ |
+| R60 | SQLDelight — Documentation | https://sqldelight.github.io/sqldelight/ |
+| R61 | SKIE — Swift/Kotlin interop | https://skie.touchlab.co/ |
+| R62 | Apple — Keychain Services | https://developer.apple.com/documentation/security/keychain-services |
+| R63 | Android — Keystore | https://developer.android.com/privacy-and-security/keystore |
+| R64 | OWASP MASVS | https://mas.owasp.org/MASVS/ |
 
 ---
 
@@ -2594,6 +2908,11 @@ Sumber diakses 16–17 November 2026. Referensi eksternal adalah bahan best prac
 - [ ] SLO dashboard; burn-rate alert; on-call.
 - [ ] Load test 500 rps/1.000 users; batch 1M/4h.
 - [ ] Chaos test pod/node/AZ/DB/Tair/ApsaraMQ.
+- [ ] Mobile: OIDC PKCE, token di Keychain/Keystore, biometrik native.
+- [ ] Mobile: offline read-only, purge cache saat logout/tenant switch.
+- [ ] Mobile: unit test + coverage gate iOS/Android/KMP; MASVS checklist.
+- [ ] Mobile: signing, TestFlight/Play internal, staged rollout, kill switch.
+- [ ] Semua platform: unit test dan coverage gate berjalan di CI.
 - [ ] Security scan/pentest; no critical/high.
 - [ ] Tenant isolation test; RLS.
 - [ ] Metering reconciliation; billing checksum.
