@@ -5,7 +5,7 @@
 **Versi:** 0.5 (Draft)
 **Tanggal:** 16 November 2026
 **Status:** Untuk direview tim
-**Dokumen terkait:** PRD, TRD, QA Report (di bawah payung "Ship & Pitch")
+**Dokumen terkait:** PRD v0.2, TRD, QA Report (di bawah payung "Ship & Pitch")
 
 ### Changelog
 
@@ -16,6 +16,7 @@
 | 0.3 | **Tambah kapabilitas OCR & forensik dokumen** (famili H: 10 rule, pipeline dokumen async, chain of custody, dataset manipulasi sintetis). Modul bergerbang: nonaktif pada demo hackathon (constraint "No OCR"), aktif Fase 2 |
 | 0.4 | H5 diperjelas: kandidat dHash256 (≤ 16 bit) + konfirmasi kemiripan teks OCR; dataset dokumen sintetis digenerate (`datasets/doc_forgery/`) beserta generator (`tools/generate_doc_dataset.js`) |
 | 0.5 | Sinkronisasi dengan PRD v0.1: document control, phase map, default conflict decisions, §3A business case & revenue model, data dictionary, coverage denominator, reason code taxonomy, priority model, revenue metering FR/AC, traceability matrix, N/A register. Koreksi hitungan rule: A–G = 33, total A–H = 43. |
+| 0.5 (rev. 2) | Referensi PRD diperbarui ke v0.2 (thin slice, koreksi regulasi, sync register). Tidak ada perubahan keputusan atau scope BRD. |
 
 > **Koreksi hitungan:** changelog 0.2 menyebut "27 rule"; katalog aktual famili A–G berisi 33 rule, dan total A–H berisi 43 rule. Angka pada changelog lama dipertahankan sebagai sejarah, bukan acuan.
 
@@ -32,8 +33,8 @@
 | Tanggal | 16 November 2026 |
 | Status | Draft untuk review tim |
 | Pemilik | Product Management |
-| Dokumen terkait | PRD Sentinel v0.1, TRD, QA Report |
-| Hubungan dengan PRD | **Default v0.5:** BRD ini adalah *Phase 0/1 thin slice* dari PRD v0.1. Konfirmasi final: `TBD` |
+| Dokumen terkait | PRD Sentinel v0.2, TRD, QA Report |
+| Hubungan dengan PRD | **Default v0.5 (rev. 2):** BRD ini adalah *Phase 0/1 thin slice* dari PRD v0.2. Konfirmasi final: `TBD` |
 | Perubahan utama v0.5 | Sinkronisasi PRD, §3A business case, data dictionary, traceability, default decisions, placeholder revenue |
 
 ### 0.2 Apa yang diikat dokumen ini
@@ -1108,30 +1109,32 @@ Format uji utama (Given/When/Then):
 
 ### 18.1 Hubungan dokumen
 
-- **Default v0.5:** BRD ini adalah Phase 0/1 thin slice dari PRD v0.1. PRD memiliki target-state; BRD memiliki Phase 0/1.
+- **Default v0.5 (rev. 2):** BRD ini adalah Phase 0/1 thin slice dari PRD v0.2. PRD memiliki target-state; BRD memiliki Phase 0/1.
 - Jika stakeholder memutuskan ini produk terpisah, status register berubah menjadi *reference only* dan keputusan harus dicatat di decision log. Status: `TBD`.
 - BRD tidak boleh mengklaim kapabilitas PRD yang belum diimplementasikan.
 
 ### 18.2 Capability traceability (BRD → PRD)
 
-| BRD | PRD | Status | Aksi |
+| BRD | PRD v0.2 | Status | Aksi |
 |---|---|---|---|
-| §3A business case | PRD §14 commercial model | Partial | PRD menjadi acuan pricing jangka panjang; BRD acuan pilot economics |
-| §7 rule catalog | PRD FR-301/302/303 | Partial | Impor katalog ke lampiran PRD |
-| §8 FR-01..30 | PRD E1/E3/E7/E8/E10/E12 | Partial | Map FR ke epic; tandai N/A |
-| §8.2 DR-01..18 | PRD FR-601..606 | Partial | Port detail forensik ke PRD Phase 2 |
-| §8.3 FR-31..35 | PRD FR-1204 usage metering | Partial | Tambahkan ke PRD E12 |
-| §9 NFR-01..24 | PRD NFR-1..14 | Partial | Tambah determinisme, reproducibility, metering |
-| §10 data contract | PRD §9.2/§18.2 | Partial | Satukan data dictionary |
-| §11 RBAC | PRD FR-1202/1301 | Partial | Bandingkan dengan 10 persona PRD |
-| §12 metrics | PRD §3 | Partial | Satukan metric dictionary |
-| §13 AC | PRD §18.3 AT-01..12 | Partial | Tambah AC-13..16 ke PRD |
-| §15 governance | PRD §12 | Partial | Selesaikan retensi, identitas, regulasi |
-| §16.2 residual risk | PRD §16 | Missing | Tambah residual risk register |
-| §16.3 roadmap | PRD §15 | Partial | Gunakan phase map §0.4 |
-| §17 milestones | PRD §15 | Partial | Map milestone |
-| §19 open questions | PRD §17.3 | Partial | Satukan decision log |
-| §3A revenue | PRD §14 | Partial | PRD pricing; BRD pilot economics |
+| §0 document control | §0A | Match | Phase map & source of truth |
+| §3A business case | §13.4, §13.5, §14 | Partial | PRD pricing/ROI; BRD pilot economics |
+| §7 rule catalog | E3, E6, E17 | Partial | BRD §7 detail; PRD E17 mengikat thin slice |
+| §8 FR-01..30 | E1, E3, E7, E8, E10, E12, E17 | Partial | Map FR ke epic; N/A register |
+| §8.2 DR-01..18 | E6, Fase 2 | Partial | Detail forensik tetap di BRD |
+| §8.3 FR-31..35 | FR-1204, FR-1207–1210 | Match | Usage, value report, entitlement, billing |
+| §9 NFR-01..24 | NFR-1..20 | Partial | Determinism, reproducibility, metering |
+| §10 data contract | §9.7, §18.2 | Partial | Field-level mapping `TBD` |
+| §11 RBAC | FR-1202/1301, §4 | Partial | 3 peran thin slice vs 10 persona target |
+| §12 metrics/coverage | §3.3, §13.5 | Partial | Denominator & planted vs production |
+| §13 AC | §18.3 AT + mapping | Partial | AC-1..8 mapping rinci `TBD` |
+| §15 governance | §12 | Partial | Retensi/tokenization `TBD` Legal |
+| §16.2 residual risk | §16.2 | Match | Register diadopsi |
+| §16.3 roadmap | §15.0 | Partial | Phase map |
+| §17 milestones | §15 | Partial | Milestone map |
+| §19 open questions | §17.3, §19.6 | Partial | Decision log |
+| §20 glossary | §18.1 | Partial | Glossary digabung |
+| §18 sync register | §19 | Match | Register paralel |
 
 ### 18.3 Kapabilitas PRD yang N/A di Phase 0/1
 
@@ -1153,7 +1156,9 @@ Format uji utama (Given/When/Then):
 | Commercial/GTM | N/A — pilot economics saja | §14 |
 | Sertifikasi ISO/SOC 2, vendor risk | N/A | §12 |
 
-### 18.4 BRD items yang harus diimpor ke PRD
+### 18.4 BRD items yang diadopsi ke PRD v0.2
+
+Semua item berikut sudah diadopsi ke PRD v0.2; detail implementasi tetap di BRD.
 
 1. Rule catalog + typology mapping (§7, §12.1).
 2. Coverage matrix + denominator definition (§4.6, §12.1).
@@ -1170,14 +1175,14 @@ Format uji utama (Given/When/Then):
 
 | ID | Keputusan | Alasan | Owner | Status | Review |
 |---|---|---|---|---|---|
-| D-01 | ML Phase 2/3, bukan Phase 0/1 | Explainability dan bukti | Product + Data Science | Default v0.5 | `TBD` |
-| D-02 | Triage-only; tanpa write-back | Batas "flag bukan bukti" | Product + Legal | Default v0.5 | `TBD` |
-| D-03 | Retensi per kategori; produksi `TBD` | Legal basis | Compliance | Default v0.5 | `TBD` |
-| D-04 | Tokenization/vault di produksi | Privasi + matching | CTO + Compliance | Default v0.5 | `TBD` |
-| D-05 | P&C auto/properti saja | Selaras PRD MVP | Product | Default v0.5 | `TBD` |
-| D-06 | Platform + per-claim + implementation + pilot credit | Selaras PRD §14.2 | Product + Finance | Default v0.5 | `TBD` |
-| D-07 | Prioritas deterministik Phase 0/1 | Explainability | Product | Default v0.5 | `TBD` |
-| D-08 | Pisahkan "case group"/"review outcome" dari "investigation case"/"claim decision" | Menghindari metrik menyesatkan | Product | Default v0.5 | `TBD` |
+| D-01 | ML Phase 2/3, bukan Phase 0/1 | Explainability dan bukti | Product + Data Science | Default v0.5 (rev. 2) | `TBD` |
+| D-02 | Triage-only; tanpa write-back | Batas "flag bukan bukti" | Product + Legal | Default v0.5 (rev. 2) | `TBD` |
+| D-03 | Retensi per kategori; produksi `TBD` | Legal basis | Compliance | Default v0.5 (rev. 2) | `TBD` |
+| D-04 | Tokenization/vault di produksi | Privasi + matching | CTO + Compliance | Default v0.5 (rev. 2) | `TBD` |
+| D-05 | P&C auto/properti saja | Selaras PRD MVP | Product | Default v0.5 (rev. 2) | `TBD` |
+| D-06 | Platform + per-claim + implementation + pilot credit | Selaras PRD §14.2 | Product + Finance | Default v0.5 (rev. 2) | `TBD` |
+| D-07 | Prioritas deterministik Phase 0/1 | Explainability | Product | Default v0.5 (rev. 2) | `TBD` |
+| D-08 | Pisahkan "case group"/"review outcome" dari "investigation case"/"claim decision" | Menghindari metrik menyesatkan | Product | Default v0.5 (rev. 2) | `TBD` |
 
 ### 18.6 Sync checklist
 
