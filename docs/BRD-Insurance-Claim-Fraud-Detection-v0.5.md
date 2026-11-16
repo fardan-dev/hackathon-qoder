@@ -5,7 +5,7 @@
 **Versi:** 0.5 (Draft)
 **Tanggal:** 16 November 2026
 **Status:** Untuk direview tim
-**Dokumen terkait:** PRD v0.2, TRD, QA Report (di bawah payung "Ship & Pitch")
+**Dokumen terkait:** PRD v0.2, [TRD v0.1](./TRD-Platform-Deteksi-Fraud-Asuransi-2026.md), QA Report (di bawah payung "Ship & Pitch")
 
 ### Changelog
 
@@ -17,6 +17,7 @@
 | 0.4 | H5 diperjelas: kandidat dHash256 (≤ 16 bit) + konfirmasi kemiripan teks OCR; dataset dokumen sintetis digenerate (`datasets/doc_forgery/`) beserta generator (`tools/generate_doc_dataset.js`) |
 | 0.5 | Sinkronisasi dengan PRD v0.1: document control, phase map, default conflict decisions, §3A business case & revenue model, data dictionary, coverage denominator, reason code taxonomy, priority model, revenue metering FR/AC, traceability matrix, N/A register. Koreksi hitungan rule: A–G = 33, total A–H = 43. |
 | 0.5 (rev. 2) | Referensi PRD diperbarui ke v0.2 (thin slice, koreksi regulasi, sync register). Tidak ada perubahan keputusan atau scope BRD. |
+| 0.5 (rev. 3) | Tambah referensi TRD v0.1 dan pemetaan NFR/acceptance di TRD §23. Tidak ada perubahan keputusan atau scope BRD. |
 
 > **Koreksi hitungan:** changelog 0.2 menyebut "27 rule"; katalog aktual famili A–G berisi 33 rule, dan total A–H berisi 43 rule. Angka pada changelog lama dipertahankan sebagai sejarah, bukan acuan.
 
@@ -33,7 +34,7 @@
 | Tanggal | 16 November 2026 |
 | Status | Draft untuk review tim |
 | Pemilik | Product Management |
-| Dokumen terkait | PRD Sentinel v0.2, TRD, QA Report |
+| Dokumen terkait | PRD Sentinel v0.2, [TRD Sentinel v0.1](./TRD-Platform-Deteksi-Fraud-Asuransi-2026.md), QA Report |
 | Hubungan dengan PRD | **Default v0.5 (rev. 2):** BRD ini adalah *Phase 0/1 thin slice* dari PRD v0.2. Konfirmasi final: `TBD` |
 | Perubahan utama v0.5 | Sinkronisasi PRD, §3A business case, data dictionary, traceability, default decisions, placeholder revenue |
 
@@ -1112,6 +1113,7 @@ Format uji utama (Given/When/Then):
 - **Default v0.5 (rev. 2):** BRD ini adalah Phase 0/1 thin slice dari PRD v0.2. PRD memiliki target-state; BRD memiliki Phase 0/1.
 - Jika stakeholder memutuskan ini produk terpisah, status register berubah menjadi *reference only* dan keputusan harus dicatat di decision log. Status: `TBD`.
 - BRD tidak boleh mengklaim kapabilitas PRD yang belum diimplementasikan.
+- **TRD v0.1** memetakan NFR-01..24, AC-1..16, dan arsitektur HA; TRD tidak mengubah scope/keputusan BRD. Traceability ada di TRD §23.
 
 ### 18.2 Capability traceability (BRD → PRD)
 

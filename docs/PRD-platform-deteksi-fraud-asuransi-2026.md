@@ -21,6 +21,7 @@
 |---|---|
 | 0.1 | Draft awal: visi multi-line, 16 epic, NFR, model komersial, pilot |
 | 0.2 | Sinkronisasi dengan BRD v0.5: dokumen kontrol & phase map, thin slice rules-only, koreksi regulasi (POJK 22/2023, POJK 8/2024, UU 1/2024), read-only default, data dictionary, reason code, coverage denominator, usage/value/billing requirements, residual risk, sync register, acceptance mapping |
+| 0.2 (rev. 2) | Tambah referensi TRD v0.1 di §18.4 dan §19.2; tidak ada perubahan scope atau requirement |
 
 ---
 
@@ -1507,6 +1508,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 
 - [Market & Vendor Landscape 2026](./insurance-fraud-detection-market-landscape-2026.md)
 - [BRD Insurance Claim Fraud Detection v0.5](./BRD-Insurance-Claim-Fraud-Detection-v0.5.md)
+- [TRD Platform Deteksi Fraud Asuransi v0.1](./TRD-Platform-Deteksi-Fraud-Asuransi-2026.md)
 
 **Regulasi dan standar:**
 
@@ -1561,6 +1563,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 | §16.3 roadmap | §15.0 | Partial | Phase map |
 | §17 milestones | §15 | Partial | Milestone map |
 | §19 open questions | §17.3 | Partial | Decision log |
+| TRD v0.1 | §8 NFR-1..20, §18.3 AT | Match | Implementasi teknis; traceability NFR/acceptance di TRD §23; scope tidak berubah |
 | §20 glossary | §18.1 | Partial | Glossary digabung |
 
 ### 19.3 N/A register thin slice
