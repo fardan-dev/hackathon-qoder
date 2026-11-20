@@ -24,6 +24,7 @@
 | 0.1 | 16 November 2026 | Draft awal: arsitektur logis, microservices Go, Next.js, PostgreSQL, Redis, Kafka, topologi HA multi-AZ, sizing, DR, observability, keamanan, test HA, runbook, ADR, dan traceability ke PRD/BRD |
 | 0.1 (rev. 2) | 17 November 2026 | Strategi deploy eksplisit ke Alibaba Cloud `ap-southeast-5`: landing zone, ACK Pro, ApsaraDB RDS, Tair, ApsaraMQ, OSS WORM/CRR, ALB/WAF/Anti-DDoS, ASM, SLS/ARMS, referensi R36–R50 |
 | 0.1 (rev. 3) | 17 November 2026 | Tambah aplikasi mobile native (Swift/SwiftUI iOS, Kotlin/Jetpack Compose Android) dengan shared business logic KMP/KMM, Clean Architecture/Clean Code, unit test gate semua platform, dan referensi R51–R64 |
+| 0.1 (rev. 4) | 20 November 2026 | Keputusan pra-MVP: mobile read-only + push (aksi tulis di web), SLO MVP 99.9/GA 99.95, thin slice 9 service, GA gate M9, WCAG per fase, field opsional `doc_sha256`/`coverage_added_date`, tim 13 engineer (11 core + 2 mobile) |
 
 ---
 
@@ -72,7 +73,7 @@
 | Target-state | 24 bulan (M0–M24) |
 | Thin slice | BRD v0.5 — Phase 0/1, rules-only, data sintetis, P&C auto/properti |
 | Dokumen acuan | BRD v0.5, PRD v0.2, QA Report |
-| Perubahan | TRD baru; tambahan channel mobile native (MVP) dan strategi deploy Alibaba Cloud |
+| Perubahan | TRD baru; channel mobile native MVP read-only + push; strategi deploy Alibaba Cloud; keputusan pra-MVP rev. 4 |
 
 **Hierarki dokumen:**
 
@@ -90,11 +91,11 @@ Jika terjadi konflik: **scope/requirement mengikuti PRD/BRD; cara implementasi m
 | Fase 1 — Hackathon MVP | Phase 0/1 thin slice | Docker Compose lokal/offline; single node | **Tidak HA** — validasi teknis, data sintetis |
 | Fase 2 — 1–3 bulan | Phase 1b/2 | Kubernetes 3 AZ; managed data services | **HA** — target 99.9% MVP |
 | Fase 3 — 3–6 bulan | Phase 2/3 | Kubernetes 3 AZ; HA + DR | **HA** — target 99.95% GA + DR |
-| — | Commercial MVP (M0–M9) | Kubernetes 3 AZ; managed data services | **HA** — 99.9% |
+| — | Commercial MVP (M2–M9; build M2–M6, pilot M6–M9) | Kubernetes 3 AZ; managed data services | **HA** — 99.9% |
 
 > **Thin slice ≠ commercial MVP.** Thin slice berjalan non-HA untuk alasan biaya dan kecepatan, tetapi **kode, kontrak, dan state harus HA-ready**: stateless, state eksternal, health probes, idempotency, dan tidak menyimpan state di filesystem lokal. TRD ini mendefinisikan HA untuk commercial MVP/GA; thin slice tidak boleh diklaim sebagai produksi HA.
 
-> **Mobile bukan pengganti web.** Aplikasi iOS/Android adalah channel tambahan untuk reviewer/supervisor pada Commercial MVP; tidak mengubah target HA backend dan tidak menambah write-back/auto-denial.
+> **Mobile bukan pengganti web.** Aplikasi iOS/Android adalah channel tambahan read-only + push untuk reviewer/supervisor pada Commercial MVP; semua aksi tulis tetap di web. Mobile tidak mengubah target HA backend dan tidak menambah write-back/auto-denial.
 
 ### 0.3 Source of truth teknis
 
@@ -152,7 +153,7 @@ TRD dianggap siap untuk implementasi jika:
 | ADR-011 | Alibaba Cloud sebagai cloud utama; provider lain hanya contingency | Accepted |
 | ADR-012 | Shared business logic memakai Kotlin Multiplatform (KMP/KMM); UI native SwiftUI dan Jetpack Compose | Accepted |
 | ADR-013 | Clean Architecture (presentation/domain/data) dan Clean Code di semua codebase; dependency rule ditegakkan di review/CI | Accepted |
-| ADR-014 | Mobile MVP offline read-only; aksi tulis (triage/note) memerlukan koneksi; tidak ada antrean write offline | Accepted |
+| ADR-014 | Mobile MVP read-only + push; aksi tulis (assign/escalate/note/keputusan) hanya di web; tidak ada antrean write offline | Accepted |
 
 ---
 
@@ -265,20 +266,21 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | TRD-NFR-15 | Observability | 100% service punya metrics/logs/traces | Review |
 | TRD-NFR-16 | Recovery | Restore <4 jam; DR <4 jam | Drill |
 | TRD-NFR-17 | Portability | Export data/model/config <30 hari | Tabletop + test |
-| TRD-NFR-18 | Accessibility | WCAG 2.1 AA | Audit |
+| TRD-NFR-18 | Accessibility | Thin slice: baseline (keyboard, kontras, label); MVP/GA: WCAG 2.1 AA | Audit |
 
 ### 2.5 SLO dan error budget
 
 | SLO | Target | Budget/bulan (30 hari) | Catatan |
 |---|---:|---:|---|
-| Edge/API availability | 99.95% | 21,6 menit | 5xx / total request valid; 4xx tidak dihitung |
+| Edge/API + UI availability (pilot MVP) | 99.9% | 43,2 menit | Sebelum GA; GA naik ke 99.95% |
+| Edge/API availability (GA) | 99.95% | 21,6 menit | 5xx / total request valid; 4xx tidak dihitung |
 | API latency p95 | <2 detik | 5% request | Diukur di edge |
-| UI availability | 99.95% | 21,6 menit | Halaman utama + API BFF |
+| UI availability (GA) | 99.95% | 21,6 menit | Halaman utama + API BFF |
 | Batch success | 99.9% | 43,2 menit | Batch 1 juta <4 jam |
 | Metering reconciliation | 100% | 0 | Defect, bukan error budget |
 | Data durability | 99.999999% | — | Mengikuti object storage + backup |
 
-**Aturan dependency:** SLO 99.95% hanya dapat dipertahankan jika dependency kritis (IdP, KMS, object storage, managed DB/Redis/Kafka) memiliki SLA ≥99.95% dan arsitektur redundan. Jika SLA dependency 99.9%, target platform harus diturunkan atau dependency diganti. Review SLA dilakukan sebelum GA.
+**Aturan dependency:** SLO 99.95% (GA) hanya dapat dipertahankan jika dependency kritis (IdP, KMS, object storage, managed DB/Redis/Kafka) memiliki SLA ≥99.95% dan arsitektur redundan. Untuk pilot MVP dengan SLO 99.9%, dependency minimal 99.9%. Jika SLA dependency lebih rendah, target platform harus diturunkan atau dependency diganti. Review SLA dilakukan sebelum GA.
 
 **Error budget policy:**
 
@@ -424,7 +426,7 @@ Sentinel adalah platform multi-tenant untuk mendeteksi fraud klaim asuransi. Pha
 | Aktor | Peran | Phase |
 |---|---|---|
 | Reviewer | Meninjau alert, mengumpulkan bukti, memberi outcome | Thin slice, MVP |
-| Mobile reviewer/supervisor | Reviewer/supervisor via aplikasi iOS/Android (alert inbox, case detail, triage, push) | MVP |
+| Mobile reviewer/supervisor | Reviewer/supervisor via aplikasi iOS/Android (alert inbox, case detail read-only, push) | MVP |
 | Supervisor | Assign, review kualitas, approve keputusan | Thin slice, MVP |
 | Admin | Tenant, user, role, config, usage | Thin slice, MVP |
 | Finance/Management | Read-only usage/value report/billing export | MVP |
@@ -1204,16 +1206,16 @@ Clean Code di backend bukan preferensi gaya; ini kontrol maintainability dan tes
 
 **Istilah:** KMM (Kotlin Multiplatform Mobile) adalah subset dari KMP; TRD memakai "KMP/KMM" agar eksplisit bahwa yang dibagi adalah business logic, bukan UI.
 
-**Scope mobile MVP (reviewer/supervisor):**
+**Scope mobile MVP (reviewer/supervisor, read-only + push):**
 
 - Login OIDC + MFA, biometrik untuk re-auth sesi.
 - Alert inbox dengan filter severity/status, pull-to-refresh, push notification.
 - Case detail read-only: ringkasan klaim, alasan/indikasi, audit ringkas, evidence metadata.
-- Aksi triage terbatas: assign ke diri sendiri, escalate, tambah catatan (dengan idempotency key); bukan keputusan akhir dan bukan write-back klaim.
 - Offline read-only untuk alert/case yang sudah di-cache.
 - Deep link dari push ke alert/case; tidak ada PII di payload push.
+- Semua aksi tulis (assign, escalate, catatan, keputusan) hanya di web; mobile tidak mengirim PATCH/POST case.
 
-**Non-goals mobile MVP:** aplikasi pemegang polis, upload dokumen, offline write, keputusan otomatis, tablet-specific layout, MDM/kiosk.
+**Non-goals mobile MVP:** aplikasi pemegang polis, upload dokumen, aksi tulis dari mobile (assign/escalate/note), offline write, keputusan otomatis, tablet-specific layout, MDM/kiosk.
 
 ### 8.8 Clean Architecture mobile
 
@@ -1292,7 +1294,7 @@ Clean Code di backend bukan preferensi gaya; ini kontrol maintainability dan tes
 - **Server adalah source of truth.** Mobile tidak menyimpan keputusan final atau status klaim sebagai otoritas.
 - **Cache read-only:** alert inbox, case summary, reason code, audit ringkas; TTL dan ETag/If-None-Match; delta sync dengan cursor.
 - **Local DB:** SQLDelight; enkripsi database jika memuat PII (SQLCipher/Keystore-derived key); purge saat logout, ganti tenant, atau remote wipe.
-- **Tidak ada write offline di MVP.** Aksi triage/catatan memerlukan koneksi; UI menampilkan status offline dan menonaktifkan aksi tulis.
+- **Tidak ada write di mobile MVP.** Aksi assign/escalate/catatan/keputusan hanya tersedia di web; UI mobile menampilkan status offline dan tidak menyediakan aksi tulis.
 - **Idempotency:** action mengirim `Idempotency-Key`; retry aman; konflik 409 ditampilkan, server menang.
 - **Push:** payload hanya `type`, `id`, `tenant_hint`; tidak ada nama pemegang polis, NIK, atau nominal.
 - **Tenant switch:** cache dan token dihapus; tidak ada data lintas tenant di disk.
@@ -1557,6 +1559,7 @@ Angka ini **design envelope** untuk satu tenant Enterprise 10 juta klaim/tahun; 
 - `loss_type` hanya MOTOR/PROPERTY di Phase 0/1; currency IDR only; multi-currency Phase 2+.
 - Tanggal ISO-8601; `incident_date ≤ claim_date`.
 - Identitas hash `sha256:`; raw ditolak.
+- Field opsional `doc_sha256` (invoice) dan `coverage_added_date` (polis) dipakai A3/E1; jika kosong, rule terkait tidak dievaluasi dan statusnya dicatat di rule registry/coverage.
 - Label ground truth terisolasi.
 - Backtest deterministic; hash output.
 - Metering reconciliation 100%.
@@ -1702,6 +1705,7 @@ Tidak ada exactly-once end-to-end. Gunakan **at-least-once + idempotent consumer
 - Gateway: TLS, WAF, JWT, rate limit, routing, request size, timeout.
 - BFF: agregasi read-only untuk UI; tidak menyimpan business state.
 - Mobile memanggil API `/v1` langsung melalui gateway (tanpa BFF web); kontrak sama dengan web; tidak ada endpoint khusus yang melemahkan authorization.
+- Mobile MVP hanya memakai endpoint GET, `/v1/devices` (registrasi/hapus token), dan `/v1/sync/alerts`; tidak ada PATCH/POST case dari mobile karena mobile bersifat read-only + push.
 - Timeout budget: gateway 3s; BFF 2,5s; service 2s; mobile tetap memakai budget yang sama.
 - Pagination cursor + ETag wajib untuk endpoint mobile; respons mobile dibatasi ukuran (field ringkas, tanpa dokumen penuh).
 - Circuit breaker per upstream.
@@ -2500,7 +2504,7 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | ADR-011 | Alibaba Cloud sebagai cloud utama | Provider lain | Residensi, layanan managed | Lock-in |
 | ADR-012 | KMP/KMM untuk shared business logic; UI native | Duplikasi logic per platform, Flutter/React Native, Compose Multiplatform UI | Satu domain, UI native, testable | Interop Swift/Kotlin, build kompleks |
 | ADR-013 | Clean Architecture + Clean Code di semua codebase | Layer bebas, arsitektur per tim | Testability, dependency rule | Disiplin review |
-| ADR-014 | Mobile offline read-only | Offline write dengan antrean, online-only | Mencegah konflik dan write tidak sah | UX offline terbatas |
+| ADR-014 | Mobile MVP read-only + push; aksi tulis di web | Mobile write (assign/note/keputusan), mobile online-only tanpa cache | Satu jalur write, audit mudah, tidak ada konflik offline | Aksi lapangan tetap lewat web |
 
 ### 19.2 Perbandingan detail
 
@@ -2633,9 +2637,9 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 
 | Phase | Timeline | Deliverable | Exit |
 |---|---|---|---|
-| 0/1 Thin slice | Hackathon | Docker Compose; 6 service; rules A–G; queue; case; audit; metering; 50k/90s | AC BRD; demo |
-| Commercial MVP | M0–M9 | K8s 3 AZ; managed DB/Redis/Kafka; multi-tenant; ML adapter; OCR basic; 1 integrasi; HA; mobile iOS+Android (alert/triage, KMP shared) | 99.9%; pilot |
-| GA | M9–M15 | DR; 99.95%; SOC 2 readiness; scale; mobile MASVS L2 | 2 paid; HA/DR drill |
+| 0/1 Thin slice | Hackathon | Docker Compose; 9 service (web + 8 backend); rules A–G; queue; case; audit; metering; 50k/90s | AC BRD; demo |
+| Commercial MVP | M2–M9 (build M2–M6; pilot M6–M9) | K8s 3 AZ; managed DB/Redis/Kafka; multi-tenant; ML adapter; OCR basic; 1 integrasi; HA; mobile iOS+Android (alert inbox + case read-only, push, KMP shared) | 99.9%; pilot |
+| GA | M9 | DR; 99.95%; SOC 2 readiness; scale; mobile MASVS L2 | 2 paid; HA/DR drill; GA sign-off |
 | Phase 2 | M9–M15 | Jiwa/kesehatan; graph; document advanced; external | Multi-line |
 | Phase 3 | M15–M24 | GenAI; consortium; ASEAN; active-active review | 10+ tenant |
 
@@ -2703,11 +2707,11 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | OQ-10 | Budget? | Sizing | Finance | `TBD` |
 | OQ-11 | On-prem hardware? | Private cloud | CTO | `TBD` |
 | OQ-12 | SLA tenant? | SLO | Product | 99.9/99.95 |
-| OQ-13 | Cakupan mobile? | Scope/UX | Product | Reviewer/supervisor MVP; app pemegang polis `TBD` |
+| OQ-13 | Cakupan mobile? | Scope/UX | Product | Reviewer/supervisor MVP read-only + push; app pemegang polis `TBD` |
 | OQ-14 | Offline write? | Sinkronisasi/konflik | Eng | Tidak (read-only) |
 | OQ-15 | Distribusi enterprise/MDM? | Operasi/security | Security | App Store/Play dulu; MDM `TBD` |
 
-**Asumsi:** 3 AZ; managed services; data residency Indonesia; no active-active; thin slice non-HA; mobile native iOS/Android dengan KMP; team 9 engineer (termasuk 2 mobile); pilot 2 insurer.
+**Asumsi:** 3 AZ; managed services; data residency Indonesia; no active-active; thin slice non-HA; mobile native iOS/Android read-only + push dengan KMP; team 13 engineer (11 core + 2 mobile); pilot 2 insurer.
 
 ---
 
@@ -2807,14 +2811,14 @@ Ikuti §15.3. Incident commander; freeze write; fencing; promote; deploy; verify
 | M-04 | Clean Architecture + Clean Code mobile | §8.8, §19.1 | Import lint + review |
 | M-05 | Clean Code backend | §7.12 | Lint + coverage gate |
 | M-06 | Unit test semua platform | §17.9, §16.2 | CI coverage report |
-| M-07 | Offline read-only | §8.12 | Test offline mode |
+| M-07 | Offline read-only; tidak ada aksi tulis mobile | §8.12 | Test offline mode |
 | M-08 | Auth aman + biometrik native | §8.10, §8.11, §8.13 | MASVS test + pentest |
 | M-09 | Push notification tanpa PII | §8.12, §8.14 | Payload test |
 | M-10 | Distribusi dan staged rollout | §8.15, §16.9 | TestFlight/Play internal |
 
 ### 23.6 Traceability catatan
 
-- Requirement mobile di atas adalah tambahan platform, bukan perubahan scope produk; tidak ada write-back atau auto-denial.
+- Requirement mobile diadopsi ke PRD §6.3.1 dan TRD §8.7; mobile MVP read-only + push, bukan thin slice, dan tidak menambah write-back/auto-denial.
 - Jika PRD/BRD menambah requirement mobile formal, ID baru harus dipetakan ke tabel ini dan ke acceptance test.
 
 ---

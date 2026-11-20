@@ -22,6 +22,7 @@
 | 0.1 | Draft awal: visi multi-line, 16 epic, NFR, model komersial, pilot |
 | 0.2 | Sinkronisasi dengan BRD v0.5: dokumen kontrol & phase map, thin slice rules-only, koreksi regulasi (POJK 22/2023, POJK 8/2024, UU 1/2024), read-only default, data dictionary, reason code, coverage denominator, usage/value/billing requirements, residual risk, sync register, acceptance mapping |
 | 0.2 (rev. 2) | Tambah referensi TRD v0.1 di §18.4 dan §19.2; tidak ada perubahan scope atau requirement |
+| 0.2 (rev. 3) | Keputusan pra-MVP: mobile reviewer/supervisor read-only + push (M-01..M-10), aksi tulis di web; GA gate M9; tim 13 engineer (11 core + 2 mobile); WCAG baseline thin slice vs AA MVP/GA. Sinkron dengan BRD rev. 4 dan TRD rev. 4 |
 
 ---
 
@@ -99,7 +100,7 @@ Sentinel adalah platform multi-tenant yang menyatukan **data, aturan, model ML, 
 | Fase 1 — Hackathon MVP | Phase 0/1 **thin slice** | Rules A–G, CSV/JSON, queue, evidence, coverage, audit; tanpa ML/OCR/integrasi/write-back |
 | Fase 2 — 1–3 bulan | Phase 1b/2 | OCR & forensik dokumen, identity/graph minimal, pilot |
 | Fase 3 — 3–6 bulan | Phase 2/3 | ML scoring, CV forensics, SIU case management, external data |
-| — | Commercial MVP (M0–M9) | P&C auto/properti, rules + baseline ML, OCR basic, 1 integrasi, case management |
+| — | Commercial MVP (M2–M9) | P&C auto/properti, rules + baseline ML, OCR basic, 1 integrasi, case management, mobile read-only + push |
 
 > **Thin slice ≠ commercial MVP.** Thin slice adalah bukti implementasi Phase 0/1; commercial MVP tetap memiliki ML baseline, OCR, dan integrasi sesuai PRD.
 
@@ -385,7 +386,7 @@ Metrik ini dipilih karena:
 ### 6.1 In scope
 
 - **Thin slice (BRD v0.5):** rules A–G (33 rule; famili H bergerbang off), CSV/JSON upload, flag bundle, queue, evidence, coverage matrix, audit, usage metering; P&C auto/properti; data sintetis; lokal/offline; **tanpa ML, OCR, integrasi, multi-tenant, atau write-back**.
-- **Commercial MVP:** shared core (ingestion, entity resolution, rules, baseline ML, graph basic, document AI basic, alert triage, case management, reporting, model governance, admin, security, audit); P&C auto/properti; 1 integrasi claims; OCR basic; dashboard; audit.
+- **Commercial MVP:** shared core (ingestion, entity resolution, rules, baseline ML, graph basic, document AI basic, alert triage, case management, reporting, model governance, admin, security, audit); P&C auto/properti; 1 integrasi claims; OCR basic; dashboard; audit; mobile reviewer/supervisor read-only + push.
 - Modul jiwa dan kesehatan pada Phase 2.
 - Integrasi dengan claims/PAS, dokumen, dan data eksternal pada Phase 1b/2.
 - Dukungan Bahasa Indonesia, IDR, format NIK/NPWP, dan data residency Indonesia untuk target-state.
@@ -411,13 +412,13 @@ Metrik ini dipilih karena:
 | Layer | Scope | Timeline |
 |---|---|---|
 | **Thin slice (BRD v0.5)** | Rules A–G, CSV/JSON, queue, evidence, coverage, audit, usage metering; P&C; data sintetis; lokal; tanpa ML/OCR/integrasi/write-back | Hackathon / Phase 0/1 |
-| **Commercial MVP** | P&C auto/properti; rules + baseline ML; OCR basic; 1 integrasi; case management; dashboard; audit | M0–M9 |
+| **Commercial MVP** | P&C auto/properti; rules + baseline ML; OCR basic; 1 integrasi; case management; dashboard; audit; mobile reviewer/supervisor read-only + push | M2–M9 (build M2–M6; pilot M6–M9) |
 | **Phase 2** | Jiwa/kesehatan; graph lanjutan; document forensics; external connectors | M9–M15 |
 | **Phase 3** | GenAI assistant; agentic evidence; consortium; ASEAN | M15–M24 |
 
 > Kolom **MVP** pada tabel di bawah adalah **commercial MVP**, bukan thin slice. Thin slice adalah subset yang divalidasi lebih dulu dan tidak boleh dijadikan alasan untuk menunda kontrol produksi.
 
-| Area | MVP (M0–M6 build; M6–M9 pilot) | Phase 2 (M9–M15) | Phase 3 (M15–M24) |
+| Area | MVP (M2–M6 build; M6–M9 pilot) | Phase 2 (M9–M15) | Phase 3 (M15–M24) |
 |---|---|---|---|
 | Lini | P&C auto & properti | Jiwa & kesehatan | Multi-negara ASEAN |
 | Deteksi | Rules + baseline ML | Model per lini, provider analytics | Ensemble, adaptive models |
@@ -427,6 +428,26 @@ Metrik ini dipilih karena:
 | Integrasi | 1 claims system + CSV/SFTP | Konektor eksternal (identitas, kendaraan, provider, cuaca) | Ecosystem marketplace |
 | AI | Scoring + reason codes | Model tuning UI, champion/challenger | GenAI assistant, autonomous investigation support |
 | Pelanggan | 2 design partner P&C | 4–6 pelanggan (termasuk jiwa/kesehatan) | 10+ pelanggan, ekspansi regional |
+| Mobile | Reviewer/supervisor: alert inbox, case read-only, push; aksi tulis di web | Notifikasi lebih kaya | App pemegang polis; mobile write |
+
+### 6.3.1 Mobile MVP (M-01..M-10)
+
+Mobile MVP adalah channel tambahan reviewer/supervisor, **bukan bagian thin slice**. Thin slice tetap web + Docker Compose. Mobile MVP bersifat **read-only + push**; semua aksi tulis (assign, escalate, catatan, keputusan) dilakukan di web.
+
+| ID | Requirement | Acceptance | Trace |
+|---|---|---|---|
+| M-01 | iOS native Swift 6+/SwiftUI | TestFlight build; Keychain; Face ID/Touch ID | TRD §8.10, §23.5 |
+| M-02 | Android native Kotlin/Compose | Play internal; Keystore/BiometricPrompt | TRD §8.11, §23.5 |
+| M-03 | Shared business logic KMP/KMM | Contract test iOS/Android; domain/use case sama | TRD §8.8, §8.9 |
+| M-04 | Clean Architecture/Clean Code mobile | Dependency rule; import lint; review | TRD §8.8, §19.1 |
+| M-05 | Clean Code backend (lintas platform) | Typed error; dependency rule; coverage gate | TRD §7.12, §16.2 |
+| M-06 | Unit test semua platform (lintas platform) | CI coverage gate Go, web, KMP, iOS, Android | TRD §17.9 |
+| M-07 | Offline read-only | Cache alert/case; tidak ada antrean write | TRD §8.12 |
+| M-08 | Auth aman + biometrik native | OIDC PKCE; MFA; re-auth biometrik; MASVS L1 | TRD §8.13 |
+| M-09 | Push tanpa PII + deep link | Payload test; deep link ke alert/case | TRD §8.12, §8.14 |
+| M-10 | Distribusi + staged rollout | TestFlight/Play internal; kill switch | TRD §8.15, §16.9 |
+
+> Mobile MVP tidak memuat upload dokumen, aksi tulis, atau keputusan akhir. Jika product memutuskan mobile write, requirement baru harus ditambahkan ke PRD dan traceability TRD §23.5.
 
 ### 6.4 Design partner
 
@@ -725,7 +746,7 @@ Thin slice adalah implementasi Phase 0/1 yang **rules-only, P&C auto/properti, d
 | NFR-6 | Explainability | Alasan alert dan keputusan | 100% alert memiliki reason code; 100% keputusan memiliki audit trail |
 | NFR-7 | Fairness | Keadilan model | Atribut terlarang dikecualikan; bias test; monitoring per segmen |
 | NFR-8 | Localization | Bahasa dan format Indonesia | Bahasa Indonesia utama; English toggle; IDR; WIB/WITA/WIT; NIK/NPWP; alamat |
-| NFR-9 | Accessibility | Aksesibilitas | WCAG 2.1 AA |
+| NFR-9 | Accessibility | Aksesibilitas | Thin slice: baseline (keyboard, kontras, label); MVP/GA: WCAG 2.1 AA |
 | NFR-10 | Observability | Monitoring dan troubleshooting | Metrics; logs; traces; model monitoring; alerting |
 | NFR-11 | Maintainability | Kualitas engineering | API-first; CI/CD; IaC; test coverage; dokumentasi |
 | NFR-12 | Portability | Exit dan portabilitas | Export data, model, konfigurasi; tidak ada lock-in |
@@ -949,8 +970,8 @@ Cross-cutting: Security, Privacy, Observability, Model Governance, LLM Gateway
 3. **Minimal clicks:** dari alert ke kasus ≤3 klik.
 4. **Bahasa Indonesia first:** istilah bisnis lokal; English toggle.
 5. **Role-based:** investigator, analis, kepala SIU, compliance melihat hal yang relevan.
-6. **Accessible:** WCAG 2.1 AA; keyboard navigation; kontras.
-7. **Responsive:** desktop untuk investigasi; mobile untuk upload bukti dan approval.
+6. **Accessible:** baseline thin slice; WCAG 2.1 AA untuk MVP/GA; keyboard navigation; kontras.
+7. **Responsive:** desktop untuk investigasi dan semua aksi tulis; mobile MVP untuk alert inbox + case read-only + push (M-01..M-10); upload bukti dan approval via web, mobile write menyusul Phase 2/3.
 8. **Flag bukan bukti:** dilarang menampilkan "terbukti", "palsu", atau "fraud" sebagai kesimpulan. Gunakan "perlu verifikasi", "indikasi", atau "periksa dokumen". Ini berlaku untuk semua layar dan ekspor.
 
 ### 11.2 Layar utama
@@ -976,7 +997,7 @@ Cross-cutting: Security, Privacy, Observability, Model Governance, LLM Gateway
 - Format NIK 16 digit, NPWP, telepon +62, plat nomor, alamat.
 - Nama Indonesia dengan variasi (nama tunggal, gelar, ejaan).
 - Dokumen Indonesia: KTP, SIM, STNK, BPKB, invoice, kuitansi, rekam medis, surat kematian.
-- WCAG 2.1 AA; ukuran font; kontras; label; keyboard.
+- WCAG 2.1 AA untuk MVP/GA; ukuran font; kontras; label; keyboard.
 
 ### 11.4 Inventaris layar per fase
 
@@ -1245,6 +1266,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 | **Phase 0 — Discovery** | M0–M2 | Design partner, data profiling, workflow mapping, compliance assessment, arsitektur, metrik | 2 pilot agreement; data contract; backlog prioritas; arsitektur disetujui |
 | **Phase 1 — MVP** | M2–M6 | Shared core + P&C auto/properti; 1 integrasi claims; rules + baseline ML; case management; dashboard; audit | MVP acceptance; security review; pilot readiness |
 | **Phase 1b — Pilot** | M6–M9 | Live pilot 2 insurer; shadow mode; feedback | Kriteria pilot tercapai; GA readiness |
+| **GA gate** | M9 | DR, 99.95%, security, mobile MASVS L2 | 2 paid pilot; HA/DR drill; GA sign-off |
 | **Phase 2 — Multi-line** | M9–M15 | Jiwa & kesehatan; provider analytics; graph lanjutan; document forensics; external connectors | 2 pelanggan jiwa/kesehatan live; target model; compliance review |
 | **Phase 3 — Intelligence** | M15–M24 | GenAI assistant; agentic evidence; consortium; ASEAN; outcome-based pricing | 10+ pelanggan; ARR target; retention; SOC 2 Type II |
 
@@ -1255,6 +1277,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 | Product Manager | 1 | Prioritas, roadmap, stakeholder |
 | Product Designer | 1 | UX investigasi, design system |
 | Frontend Engineer | 2 | Case workspace, dashboard, graph |
+| Mobile Engineer | 2 | iOS/Android native, KMP shared, store release |
 | Backend Engineer | 3 | Ingestion, rules, case, API |
 | Data Engineer | 2 | Pipeline, lakehouse, feature store |
 | ML Engineer | 2 | Model, explainability, monitoring |
@@ -1276,7 +1299,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 
 ### 15.3 Kesiapan eksekusi & RACI
 
-**Temuan v0.2:** commercial MVP memiliki ~53 FR P0, 16 epic, dan target 9 engineer dalam 6 bulan build. Ini berisiko terhadap kualitas dan compliance. **Thin slice** (BRD v0.5) adalah subset yang divalidasi lebih dulu; commercial MVP memerlukan salah satu dari: pengurangan scope P0, penambahan tim, atau perpanjangan timeline. Keputusan `TBD`.
+**Keputusan v0.2 (rev. 3):** commercial MVP memiliki ~53 FR P0 dan 16 epic; target **13 engineer (11 core + 2 mobile)**, MVP build **M2–M6**, pilot **M6–M9**, dan **GA gate M9**. Risiko scope tetap dipantau; fallback jika headcount tidak tersedia adalah GA M15 atau pemangkasan P0. **Thin slice** (BRD v0.5) tetap subset yang divalidasi lebih dulu.
 
 **Tim thin slice (indikatif):**
 
@@ -1541,7 +1564,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 
 - **Default v0.2:** PRD ini adalah target-state; BRD v0.5 adalah Phase 0/1 thin slice.
 - **Thin slice** = rules-only, data sintetis, P&C auto/properti, CSV/JSON, tanpa ML/OCR/integrasi/write-back.
-- **Commercial MVP** = P&C, rules + baseline ML, OCR basic, 1 integrasi, case management, dashboard, audit (M0–M9).
+- **Commercial MVP** = P&C, rules + baseline ML, OCR basic, 1 integrasi, case management, dashboard, audit, mobile read-only + push (M2–M9).
 - Jika stakeholder memutuskan BRD adalah produk terpisah, status register menjadi *reference only* dan decision log diperbarui. Status: `TBD`.
 
 ### 19.2 Traceability matrix
@@ -1563,7 +1586,7 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 | §16.3 roadmap | §15.0 | Partial | Phase map |
 | §17 milestones | §15 | Partial | Milestone map |
 | §19 open questions | §17.3 | Partial | Decision log |
-| TRD v0.1 | §8 NFR-1..20, §18.3 AT | Match | Implementasi teknis; traceability NFR/acceptance di TRD §23; scope tidak berubah |
+| TRD v0.1 | §8 NFR-1..20, §18.3 AT, §23 | Match | Implementasi teknis; traceability NFR/acceptance di TRD §23; mobile M-01..M-10 di §6.3.1 |
 | §20 glossary | §18.1 | Partial | Glossary digabung |
 
 ### 19.3 N/A register thin slice
@@ -1579,10 +1602,11 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 | GenAI assistant | N/A | E15 |
 | External data/consortium | N/A | E14 |
 | Notifications/collaboration | N/A | E16 |
+| Mobile MVP (M-01..M-10) | N/A thin slice — MVP read-only + push | §6.3.1 |
 | Underwriting fraud | N/A | J5 |
 | DSR/DPIA/data residency | N/A — data sintetis | §12 |
 | Availability/DR/observability | N/A — lokal | §8 |
-| Localization/WCAG | N/A — IDR only | §11 |
+| Localization/WCAG | Lokalisasi N/A (IDR only); sertifikasi WCAG N/A — baseline aksesibilitas tetap wajib | §11 |
 | Commercial GTM | N/A — pilot economics saja | §14 |
 | ISO/SOC 2/vendor risk | N/A | §12 |
 
@@ -1598,6 +1622,8 @@ Customer ROI = (V_time + V_fraud + V_friction + V_audit − Price) / Price
 | D-06 | Platform + per-claim + implementation + pilot credit; no per-alert | Product + Finance | Default v0.2 | `TBD` |
 | D-07 | Prioritas deterministik thin slice; expected loss Phase 2 | Product | Default v0.2 | `TBD` |
 | D-08 | Pisahkan case group/review outcome dari investigation case/claim decision | Product | Default v0.2 | `TBD` |
+| D-09 | Mobile MVP read-only + push; aksi tulis hanya di web | Product + Eng | Keputusan v0.2 (rev. 3) | M9 |
+| D-10 | GA gate M9; tim 13 engineer (11 core + 2 mobile) | Product + Finance | Keputusan v0.2 (rev. 3) | M9 |
 
 ### 19.5 BRD items yang diadopsi ke PRD
 

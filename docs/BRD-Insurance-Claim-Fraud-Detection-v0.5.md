@@ -18,6 +18,7 @@
 | 0.5 | Sinkronisasi dengan PRD v0.1: document control, phase map, default conflict decisions, §3A business case & revenue model, data dictionary, coverage denominator, reason code taxonomy, priority model, revenue metering FR/AC, traceability matrix, N/A register. Koreksi hitungan rule: A–G = 33, total A–H = 43. |
 | 0.5 (rev. 2) | Referensi PRD diperbarui ke v0.2 (thin slice, koreksi regulasi, sync register). Tidak ada perubahan keputusan atau scope BRD. |
 | 0.5 (rev. 3) | Tambah referensi TRD v0.1 dan pemetaan NFR/acceptance di TRD §23. Tidak ada perubahan keputusan atau scope BRD. |
+| 0.5 (rev. 4) | Mobile dinyatakan bukan thin slice (MVP read-only + push di PRD §6.3.1); tambah field opsional `doc_sha256` dan `coverage_added_date`; sinkron dengan PRD rev. 3 dan TRD rev. 4 |
 
 > **Koreksi hitungan:** changelog 0.2 menyebut "27 rule"; katalog aktual famili A–G berisi 33 rule, dan total A–H berisi 43 rule. Angka pada changelog lama dipertahankan sebagai sejarah, bukan acuan.
 
@@ -35,7 +36,7 @@
 | Status | Draft untuk review tim |
 | Pemilik | Product Management |
 | Dokumen terkait | PRD Sentinel v0.2, [TRD Sentinel v0.1](./TRD-Platform-Deteksi-Fraud-Asuransi-2026.md), QA Report |
-| Hubungan dengan PRD | **Default v0.5 (rev. 2):** BRD ini adalah *Phase 0/1 thin slice* dari PRD v0.2. Konfirmasi final: `TBD` |
+| Hubungan dengan PRD | **Default v0.5 (rev. 4):** BRD ini adalah *Phase 0/1 thin slice* dari PRD v0.2 (rev. 3). Konfirmasi final: `TBD` |
 | Perubahan utama v0.5 | Sinkronisasi PRD, §3A business case, data dictionary, traceability, default decisions, placeholder revenue |
 
 ### 0.2 Apa yang diikat dokumen ini
@@ -388,7 +389,7 @@ Sensitivitas wajib diuji untuk: harga per klaim, flag rate, biaya OCR/dokumen, c
 - Dashboard, coverage matrix, ekspor, audit trail, **evidence package** (termasuk laporan forensik & hash dokumen).
 - Rule registry dengan versi + backtesting.
 - **Usage metering, value report, dan billing export** untuk mendukung revenue (§8.3).
-- Web app responsif; opsional aplikasi mobile pada fase pitch.
+- Web app responsif. Aplikasi mobile **bukan bagian thin slice**; mobile MVP (read-only + push) didefinisikan di PRD §6.3.1 dan TRD §8.7.
 
 ### 4.2 Out of Scope
 
@@ -781,16 +782,20 @@ CLM-0001,POL-7712,C-0142,2026-09-14,2026-09-10,MOTOR,18500000,IDR,P-22,INV-7781,
 ### 10.2 Skema invoice
 
 ```csv
-invoice_number,invoice_date,provider_id,invoice_amount,currency,claim_id
-INV-7781,2026-09-11,P-22,18500000,IDR,CLM-0001
+invoice_number,invoice_date,provider_id,invoice_amount,currency,claim_id,doc_sha256
+INV-7781,2026-09-11,P-22,18500000,IDR,CLM-0001,sha256:9f2c...
 ```
+
+`doc_sha256` opsional. Untuk thin slice tanpa document service, hash dokumen dapat dikirim di file invoice agar A3 tetap dapat dievaluasi tanpa OCR.
 
 ### 10.3 Skema polis
 
 ```csv
-policy_id,product,loss_type_scope,inception_date,expiry_date,status,sum_insured,premium,reinstatement_date,asset_id,agent_id
-POL-7712,MOTOR_COMP,MOTOR,2026-01-15,2027-01-14,ACTIVE,150000000,4200000,,AST-3301,AGT-05
+policy_id,product,loss_type_scope,inception_date,coverage_added_date,expiry_date,status,sum_insured,premium,reinstatement_date,asset_id,agent_id
+POL-7712,MOTOR_COMP,MOTOR,2026-01-15,2026-01-15,2027-01-14,ACTIVE,150000000,4200000,,AST-3301,AGT-05
 ```
+
+`coverage_added_date` opsional; jika kosong, E1 tidak dievaluasi dan statusnya dicatat.
 
 ### 10.4 Skema provider
 
@@ -842,6 +847,7 @@ Nilai `sha256` dihitung server saat unggah; `phash`, hasil metadata, OCR, dan la
 - `currency` seragam per batch (IDR untuk MVP).
 - `invoice_number` wajib bila klaim menyertakan invoice; harus ada di invoice referensi.
 - Atribut identitas wajib hash (`sha256:…`); nilai mentah ditolak.
+- Field opsional `doc_sha256` (invoice) dan `coverage_added_date` (polis) dipakai rule A3/E1; jika kosong, rule terkait tidak dievaluasi dan statusnya dicatat di rule registry/coverage.
 - Dokumen: magic bytes harus cocok dengan ekstensi; dimensi minimum 800×600 untuk OCR yang layak; PDF maks. 5 halaman (halaman pertama dianalisis).
 - Baris gagal = impor gagal utuh (fail-fast) dengan laporan per baris.
 
@@ -1110,10 +1116,11 @@ Format uji utama (Given/When/Then):
 
 ### 18.1 Hubungan dokumen
 
-- **Default v0.5 (rev. 2):** BRD ini adalah Phase 0/1 thin slice dari PRD v0.2. PRD memiliki target-state; BRD memiliki Phase 0/1.
+- **Default v0.5 (rev. 4):** BRD ini adalah Phase 0/1 thin slice dari PRD v0.2 (rev. 3). PRD memiliki target-state; BRD memiliki Phase 0/1.
 - Jika stakeholder memutuskan ini produk terpisah, status register berubah menjadi *reference only* dan keputusan harus dicatat di decision log. Status: `TBD`.
 - BRD tidak boleh mengklaim kapabilitas PRD yang belum diimplementasikan.
 - **TRD v0.1** memetakan NFR-01..24, AC-1..16, dan arsitektur HA; TRD tidak mengubah scope/keputusan BRD. Traceability ada di TRD §23.
+- **Mobile MVP** bukan bagian thin slice; requirement mobile ada di PRD §6.3.1 dan TRD §8.7 (read-only + push, aksi tulis di web).
 
 ### 18.2 Capability traceability (BRD → PRD)
 
@@ -1122,7 +1129,7 @@ Format uji utama (Given/When/Then):
 | §0 document control | §0A | Match | Phase map & source of truth |
 | §3A business case | §13.4, §13.5, §14 | Partial | PRD pricing/ROI; BRD pilot economics |
 | §7 rule catalog | E3, E6, E17 | Partial | BRD §7 detail; PRD E17 mengikat thin slice |
-| §8 FR-01..30 | E1, E3, E7, E8, E10, E12, E17 | Partial | Map FR ke epic; N/A register |
+| §8 FR-01..35 | E1, E3, E7, E8, E10, E12, E17 | Partial | Map FR ke epic; N/A register |
 | §8.2 DR-01..18 | E6, Fase 2 | Partial | Detail forensik tetap di BRD |
 | §8.3 FR-31..35 | FR-1204, FR-1207–1210 | Match | Usage, value report, entitlement, billing |
 | §9 NFR-01..24 | NFR-1..20 | Partial | Determinism, reproducibility, metering |
