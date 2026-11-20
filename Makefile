@@ -3,10 +3,11 @@ COMPOSE := docker compose
 SERVICES := identity ingestion rules alert case audit metering reporting
 TOOLS := migrate seed datasetgen
 
-.PHONY: help up down ps logs build test test-race lint vet fmt tidy coverage migrate seed datasetgen fp-gate demo reset-demo clean ci
+.PHONY: help up web down ps logs build test test-race lint vet fmt tidy coverage migrate seed datasetgen fp-gate demo reset-demo clean ci
 
 help:
 	@echo "up        start the full stack"
+	@echo "web       start the optional Next.js web UI at http://localhost:3000"
 	@echo "down      stop the stack (keep volumes)"
 	@echo "reset     stop the stack and delete volumes"
 	@echo "seed      seed demo users through the identity API"
@@ -21,6 +22,11 @@ help:
 up:
 	$(COMPOSE) up --build -d
 	@echo "Postgres 5432 | Identity 8081 | Ingestion 8082 | Rules 8083 | Alert 8084 | Case 8085 | Audit 8086 | Metering 8087 | Reporting 8088"
+	@echo "Web UI optional: make web"
+
+web:
+	$(COMPOSE) --profile web up -d --build web
+	@echo "Web UI http://localhost:3000 (login with a seeded demo user)"
 
 down:
 	$(COMPOSE) down

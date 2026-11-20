@@ -153,6 +153,10 @@ a {
 }
 
 .app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
   margin-left: auto;
 }
 
@@ -169,6 +173,46 @@ a {
   color: #ffffff;
 }
 
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #eaf6f7;
+  font-size: 13px;
+}
+
+.user-menu__name {
+  font-weight: 600;
+}
+
+.user-menu__role {
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #cfeaec;
+}
+
+.user-menu form {
+  margin: 0;
+}
+
+.button--header {
+  min-height: 32px;
+  padding: 0 12px;
+  background: transparent;
+  border-color: rgb(255 255 255 / 35%);
+  color: #f3fafb;
+  font-weight: 600;
+}
+
+.button--header:hover {
+  background: rgb(255 255 255 / 12%);
+}
+
 .env-badge {
   border: 1px solid rgb(255 255 255 / 28%);
   background: rgb(255 255 255 / 10%);
@@ -178,6 +222,45 @@ a {
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Login */
+
+.login-page {
+  min-height: calc(100vh - 220px);
+  display: grid;
+  place-items: center;
+  padding: 40px 20px;
+}
+
+.login-card {
+  width: min(460px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+.login-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.login-form .button {
+  justify-self: start;
+  min-width: 120px;
+}
+
+.login-error {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #f0b4ad;
+  border-radius: 8px;
+  background: #fff1f0;
+  color: #8a1c12;
+  font-size: 14px;
 }
 
 /* Layout */
@@ -576,9 +659,32 @@ h3 {
   color: var(--escalated-ink);
 }
 
-.badge--status-suppressed {
+.badge--status-suppressed,
+.badge--case-closed {
   background: var(--low-bg);
   color: var(--low-ink);
+}
+
+.badge--case-open {
+  background: var(--info-bg);
+  color: var(--info-ink);
+}
+
+.badge--case-in-review,
+.badge--case-investigating {
+  background: #e4effa;
+  color: #174a78;
+}
+
+.badge--decision-confirmed {
+  background: var(--escalated-bg);
+  color: var(--escalated-ink);
+}
+
+.badge--decision-cleared,
+.badge--decision-needs-info {
+  background: var(--medium-bg);
+  color: var(--medium-ink);
 }
 
 .badge--sla-overdue {
@@ -680,6 +786,21 @@ h3 {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dashboard-grid .panel {
+  margin-bottom: 0;
+}
+
+.dashboard-table {
+  min-width: 360px;
 }
 
 .panel {

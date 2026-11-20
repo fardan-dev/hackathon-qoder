@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 
-import { summarizeCoverage } from "@/lib/coverage/coverage";
-import { listCoverage } from "@/lib/coverage/repository";
+import { redirectOnUnauthorized } from "@/lib/api/guard";
+import { requireSession } from "@/lib/auth/session";
+import { getCoverage } from "@/lib/coverage/repository";
 
 export const metadata: Metadata = {
   title: "Coverage Tipologi",
 };
 
 function formatRate(bps: number): string {
-  return `${(bps / 100).toFixed(1).replace(".", ",")}%`;
+  return `${(bps / 100).toFixed(2).replace(".", ",")}%`;
 }
 
 function Stat({
@@ -32,15 +33,18 @@ function Stat({
 }
 
 export default async function CoveragePage() {
-  const rows = await listCoverage();
-  const summary = summarizeCoverage(rows);
+  const { token } = await requireSession("/coverage");
+  const { rows, summary } = await redirectOnUnauthorized(
+    getCoverage(token),
+    "/coverage",
+  );
 
   return (
     <div className="page">
       <div className="page-head">
         <div>
           <p className="eyebrow">Coverage Phase 0/1</p>
-          <h1>Coverage 14 Tipologi</h1>
+          <h1>Coverage {summary.denominator} Tipologi</h1>
           <p className="lede">
             Matrix read-only terhadap tipologi in-scope. Status menunjukkan
             cakupan rule, bukan penilaian atas klaim tertentu.
@@ -65,7 +69,8 @@ export default async function CoveragePage() {
       <div className="table-wrap">
         <table className="queue-table coverage-table">
           <caption className="sr-only">
-            Matrix coverage 14 tipologi beserta rule dan residual risk
+            Matrix coverage {summary.denominator} tipologi beserta rule dan
+            residual risk
           </caption>
           <thead>
             <tr>

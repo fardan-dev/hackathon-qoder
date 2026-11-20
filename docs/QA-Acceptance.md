@@ -27,8 +27,16 @@ Verified in the current working tree on 2026-11-20:
   `dataset_sha256=sha256:b8ee7d8956582bc2dcea23443b00c069293edb6f1af4a203ccccbc2f232efafa`,
   `output_hash=sha256:cd5c1af6e9707ad15310551640bcd434656ca8a6761a772c6d4662ed32994daf`,
   pack `2026.11.1`, engine `rulesengine-1.0.0`.
-- Web: lint, typecheck, 44/44 Vitest tests (including the UI copy guardrail)
+- Web: lint, typecheck, 52/52 Vitest tests (including the UI copy guardrail)
   and `next build` pass.
+- Web live wiring: with the Compose stack running, `make web` + browser
+  walkthrough passed — unauth `/queue` redirects to `/login?next=%2Fqueue`,
+  login as reviewer renders 32 live alerts, alert detail loads from
+  `GET /v1/alerts/{id}` (raw `sha256:` segment), cases list/detail load from
+  the case service with package verification, coverage matches
+  `GET /v1/coverage` (10/14, coverage_bps 7142), CSV export returns 200 with
+  live rows, dashboard matches `GET /v1/dashboard`, and logout clears the
+  session and returns to `/login`.
 - Clean-environment acceptance passes: `docker compose down -v`, then
   `make up`, `make seed`, `make demo` on fresh volumes. 47 claims accepted,
   CLM-1001 flags A3/A6/B4, audit chain valid over 128 events, dashboard
@@ -47,6 +55,9 @@ Verified in the current working tree on 2026-11-20:
    tests, secret-scan CI job.
 5. UI copy guard: `src/lib/copy-guard.test.ts` fails if conclusion wording
    ("terbukti", "palsu", "fraud") appears in web source.
+6. Web live walkthrough: login/logout, queue, alert detail, cases, coverage
+   CSV, and dashboard against the running Compose stack (see execution
+   record above).
 
 ## Acceptance criteria
 
@@ -95,11 +106,9 @@ Critical findings: **0**. No open high-severity finding in the reviewed scope.
 
 ## Residual risks (ranked)
 
-1. The web queue and case pages read seeded mock data, not the live alert/case
-   APIs; the API path is verified by `scripts/demo.sh` instead.
-2. H-family document forensics are off (AC-9/11/12); the coverage matrix records
+1. H-family document forensics are off (AC-9/11/12); the coverage matrix records
    this residual risk explicitly.
-3. No load/soak test was run; rate limiting is in-process per replica, so
+2. No load/soak test was run; rate limiting is in-process per replica, so
    horizontal scaling would need a shared limiter.
-4. No external penetration test; the security review above is code-level.
-5. Entitlement enforcement (AC-15) is not implemented in the thin slice.
+3. No external penetration test; the security review above is code-level.
+4. Entitlement enforcement (AC-15) is not implemented in the thin slice.

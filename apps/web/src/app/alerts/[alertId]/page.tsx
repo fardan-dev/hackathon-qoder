@@ -8,10 +8,14 @@ import {
   SlaBadge,
   StatusBadge,
 } from "@/components/badges";
+import { ApiError } from "@/lib/api/client";
+import { redirectOnUnauthorized } from "@/lib/api/guard";
+import { requireSession } from "@/lib/auth/session";
 import {
   LOSS_TYPE_LABEL,
   formatDateTimeWib,
   formatIdr,
+  shortAlertId,
 } from "@/lib/alerts/format";
 import {
   buildQueueQuery,
@@ -30,12 +34,8 @@ export async function generateMetadata({
 }: {
   params: Params;
 }): Promise<Metadata> {
-  const { alertId } = await params;
-  const alert = await findAlert(alertId);
-
-  return {
-    title: alert ? `${alert.claimId} · ${alert.alertId}` : "Alert",
-  };
+  await params;
+  return { title: "Detail alert" };
 }
 
 export default async function AlertDetailPage({
@@ -51,8 +51,15 @@ export default async function AlertDetailPage({
   const backQuery = buildQueueQuery(parseQueueSearch(back));
   const backHref = `/queue${backQuery}`;
 
+  const { token } = await requireSession(`/alerts/${alertId}`);
   const now = new Date();
-  const alert = await findAlert(alertId, now);
+  const alert = await redirectOnUnauthorized(
+    findAlert(token, alertId),
+    `/alerts/${alertId}`,
+  ).catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  });
   if (!alert) notFound();
 
   const priority = alertPriority(alert);
@@ -70,7 +77,8 @@ export default async function AlertDetailPage({
       <div className="page-head detail-head">
         <div>
           <p className="eyebrow">
-            {alert.alertId} · {LOSS_TYPE_LABEL[alert.lossType]}
+            {shortAlertId(alert.alertId)} ·{" "}
+            {LOSS_TYPE_LABEL[alert.lossType]}
           </p>
           <h1>{alert.claimId}</h1>
           <p className="lede">
@@ -95,7 +103,9 @@ export default async function AlertDetailPage({
               Buka kasus {alert.groupId}
             </Link>
           ) : (
-            <p className="hint">Belum ada case group untuk alert ini.</p>
+            <Link className="button button--ghost" href="/cases">
+              Lihat daftar kasus
+            </Link>
           )}
         </div>
       </div>
@@ -109,11 +119,11 @@ export default async function AlertDetailPage({
           </div>
           <div>
             <dt>Claimant</dt>
-            <dd className="mono">{alert.claimantId}</dd>
+            <dd className="mono">{alert.claimantId ?? "—"}</dd>
           </div>
           <div>
             <dt>Provider</dt>
-            <dd className="mono">{alert.providerId}</dd>
+            <dd className="mono">{alert.providerId ?? "—"}</dd>
           </div>
           <div>
             <dt>Nilai klaim</dt>

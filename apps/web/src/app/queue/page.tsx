@@ -10,6 +10,8 @@ import {
 } from "@/lib/alerts/filters";
 import { buildQueue } from "@/lib/alerts/queue";
 import { listAlerts } from "@/lib/alerts/repository";
+import { redirectOnUnauthorized } from "@/lib/api/guard";
+import { requireSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Antrean Review",
@@ -43,8 +45,12 @@ export default async function QueuePage({
   searchParams: SearchParams;
 }) {
   const filters = parseQueueFilters(await searchParams);
+  const { token } = await requireSession("/queue");
   const now = new Date();
-  const alerts = await listAlerts(now);
+  const alerts = await redirectOnUnauthorized(
+    listAlerts(token),
+    "/queue",
+  );
   const { rows, overdueCount, highCount } = buildQueue(alerts, filters, now);
   const queueQuery = buildQueueQuery(filters);
 
@@ -65,11 +71,11 @@ export default async function QueuePage({
         <Stat
           value={rows.length}
           label="Alert tampil"
-          detail={`dari ${alerts.length} alert batch`}
+          detail={`dari ${alerts.length} alert`}
         />
         <Stat value={overdueCount} label="Lewat SLA" tone="danger" />
         <Stat value={highCount} label="Prioritas High" tone="warn" />
-        <Stat value={alerts.length} label="Total batch" />
+        <Stat value={alerts.length} label="Total alert" />
       </section>
 
       <FilterBar filters={filters} />

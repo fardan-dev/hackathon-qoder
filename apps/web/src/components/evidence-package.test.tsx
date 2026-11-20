@@ -2,14 +2,26 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { EvidencePackage } from "./EvidencePackage";
-import { findCaseEvidence } from "@/lib/case/repository";
+import { verifyPackage } from "@/lib/case/evidence";
+import { createMockEvidence } from "@/lib/case/mock-evidence";
 
 const NOW = new Date("2026-11-20T10:00:00+07:00");
 
+function mockEvidence(groupId: string) {
+  const entry = createMockEvidence(NOW).get(groupId);
+  if (!entry) throw new Error(`missing mock evidence ${groupId}`);
+  return {
+    artifacts: entry.artifacts,
+    pkg: entry.pkg,
+    verification: entry.pkg
+      ? verifyPackage(entry.artifacts, entry.pkg)
+      : null,
+  };
+}
+
 describe("evidence package UI", () => {
-  it("shows a verified frozen package with artifact hashes", async () => {
-    const evidence = await findCaseEvidence("CG-0001", NOW);
-    if (!evidence) throw new Error("missing mock evidence");
+  it("shows a verified frozen package with artifact hashes", () => {
+    const evidence = mockEvidence("CG-0001");
 
     render(
       <EvidencePackage
@@ -35,9 +47,8 @@ describe("evidence package UI", () => {
     );
   });
 
-  it("shows the open package state before freezing", async () => {
-    const evidence = await findCaseEvidence("CG-0002", NOW);
-    if (!evidence) throw new Error("missing mock evidence");
+  it("shows the open package state before freezing", () => {
+    const evidence = mockEvidence("CG-0002");
 
     render(<EvidencePackage evidence={evidence} claimIds={["CLM-0002"]} />);
 

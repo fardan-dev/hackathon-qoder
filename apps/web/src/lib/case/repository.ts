@@ -1,31 +1,51 @@
-import {
-  verifyPackage,
-  type EvidenceArtifact,
-  type EvidencePackage,
-  type PackageVerification,
-} from "./evidence";
-import { createMockEvidence } from "./mock-evidence";
+import { apiGet, isUnauthorized } from "@/lib/api/client";
+import { caseApiUrl } from "@/lib/api/config";
 
-export interface CaseEvidenceView {
-  artifacts: EvidenceArtifact[];
-  pkg: EvidencePackage | null;
-  verification: PackageVerification | null;
+import { verifyPackage } from "./evidence";
+
+export type { CaseEvidenceView } from "./evidence";
+import {
+  parseCaseDetail,
+  parseCaseList,
+  parsePackageVerification,
+  type CaseDetail,
+  type CaseSummary,
+} from "./live";
+
+export type { CaseDetail, CaseSummary } from "./live";
+
+export async function listCases(token: string): Promise<CaseSummary[]> {
+  const payload = await apiGet<unknown>(caseApiUrl(), "/v1/cases", token);
+  return parseCaseList(payload);
 }
 
-// Swap point for the Go case service (`GET /v1/cases/{caseID}`); thin slice
-// runs on seeded evidence with the same hash semantics as the API.
-export async function findCaseEvidence(
-  groupId: string,
-  now: Date = new Date(),
-): Promise<CaseEvidenceView | undefined> {
-  const entry = createMockEvidence(now).get(groupId);
-  if (!entry) return undefined;
+export async function findCase(
+  token: string,
+  caseId: string,
+): Promise<CaseDetail> {
+  const payload = await apiGet<unknown>(
+    caseApiUrl(),
+    `/v1/cases/${encodeURIComponent(caseId)}`,
+    token,
+  );
+  const detail = parseCaseDetail(payload, null);
+  if (!detail.pkg) return detail;
 
-  return {
-    artifacts: entry.artifacts,
-    pkg: entry.pkg,
-    verification: entry.pkg
-      ? verifyPackage(entry.artifacts, entry.pkg)
-      : null,
-  };
+  try {
+    const verificationPayload = await apiGet<unknown>(
+      caseApiUrl(),
+      `/v1/cases/${encodeURIComponent(caseId)}/package/verify`,
+      token,
+    );
+    return {
+      ...detail,
+      verification: parsePackageVerification(verificationPayload),
+    };
+  } catch (error) {
+    if (isUnauthorized(error)) throw error;
+    return {
+      ...detail,
+      verification: verifyPackage(detail.evidence, detail.pkg),
+    };
+  }
 }

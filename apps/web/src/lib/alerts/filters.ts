@@ -44,6 +44,7 @@ const STATUS_VALUES = new Set<StatusFilter>([
   "IN_REVIEW",
   "ESCALATED",
   "SUPPRESSED",
+  "CLOSED",
 ]);
 
 const LOSS_TYPE_VALUES = new Set<LossTypeFilter>([

@@ -1,23 +1,39 @@
-import { createMockAlerts } from "./mock-data";
+import { apiGet, ApiError } from "@/lib/api/client";
+import { alertApiUrl } from "@/lib/api/config";
+
+import { mapAlert, parseAlertsResponse, type RawAlert } from "./live";
 import type { Alert } from "./schema";
 
-// Swap point for the Go alert service (`GET /v1/alerts`); thin slice runs on seeded data.
-export async function listAlerts(now: Date = new Date()): Promise<Alert[]> {
-  return createMockAlerts(now);
+export async function listAlerts(token: string): Promise<Alert[]> {
+  const payload = await apiGet<unknown>(
+    alertApiUrl(),
+    "/v1/alerts?limit=500&include_suppressed=true",
+    token,
+  );
+  return parseAlertsResponse(payload);
 }
 
 export async function findAlert(
-  alertId: string,
-  now: Date = new Date(),
+  token: string,
+  rawAlertId: string,
 ): Promise<Alert | undefined> {
-  const alerts = await listAlerts(now);
-  return alerts.find((alert) => alert.alertId === alertId);
-}
+  let alertId: string;
+  try {
+    alertId = decodeURIComponent(rawAlertId);
+  } catch {
+    throw new ApiError(404, "NOT_FOUND", "Alert tidak ditemukan.");
+  }
 
-export async function findAlertsByGroup(
-  groupId: string,
-  now: Date = new Date(),
-): Promise<Alert[]> {
-  const alerts = await listAlerts(now);
-  return alerts.filter((alert) => alert.groupId === groupId);
+  // The Go router matches the literal `sha256:` prefix; percent-encoding it
+  // makes the lookup miss. Keep the path segment restricted to ID characters.
+  if (!/^[A-Za-z0-9:_-]+$/.test(alertId)) {
+    throw new ApiError(404, "NOT_FOUND", "Alert tidak ditemukan.");
+  }
+
+  const payload = await apiGet<RawAlert>(
+    alertApiUrl(),
+    `/v1/alerts/${alertId}`,
+    token,
+  );
+  return mapAlert(payload);
 }

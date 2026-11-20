@@ -243,6 +243,43 @@ services:
       timeout: 3s
       retries: 10
 
+  web:
+    profiles: ["web"]
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+    restart: unless-stopped
+    environment:
+      IDENTITY_API_URL: http://identity:8080
+      ALERT_API_URL: http://alert:8080
+      CASE_API_URL: http://case:8080
+      REPORTING_API_URL: http://reporting:8080
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+      WEB_API_TIMEOUT_MS: ${WEB_API_TIMEOUT_MS:-5000}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      identity:
+        condition: service_healthy
+      alert:
+        condition: service_healthy
+      case:
+        condition: service_healthy
+      reporting:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://localhost:3000/login >/dev/null 2>&1 || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
 volumes:
   pgdata:
   redisdata:
