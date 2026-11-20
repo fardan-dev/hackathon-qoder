@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+    branches: [master, staging]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+          cache: true
+      - name: Vet
+        run: go vet ./...
+      - name: Backtest FP gate
+        env:
+          FP_GATE_OUT: backtest/fp-gate-report.json
+        run: go test ./cmd/datasetgen -run 'TestControlClaimFalsePositiveGate|TestEngineOutputIndependentOfGroundTruth' -v
+      - name: Upload backtest artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fp-gate-report
+          path: backtest/fp-gate-report.json
+          if-no-files-found: warn
+      - name: Test
+        run: go test -race ./...
+      - name: Build services
+        run: |
+          for svc in identity ingestion rules alert case audit metering reporting; do
+            go build -trimpath ./services/$svc/cmd/server
+          done
+      - name: Build tools
+        run: |
+          go build -trimpath ./cmd/migrate
+          go build -trimpath ./cmd/seed
+          go build -trimpath ./cmd/datasetgen
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate compose file
+        run: docker compose config --quiet
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject committed env files and private keys
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Ev '\.env\.example$' | grep -E '(^|/)\.env($|\.)' ; then
+            echo "Committed env file detected"; exit 1
+          fi
+          if git grep -nE 'BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY' ; then
+            echo "Private key detected"; exit 1
+          fi
