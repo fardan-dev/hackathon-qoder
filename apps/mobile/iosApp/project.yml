@@ -1,0 +1,87 @@
+name: RevasMobile
+options:
+  bundleIdPrefix: com.revas.mobile
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    CODE_SIGNING_ALLOWED: "NO"
+    CODE_SIGNING_REQUIRED: "NO"
+
+targets:
+  Revas:
+    type: application
+    platform: iOS
+    sources:
+      - path: Revas
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.revas.mobile.ios
+        PRODUCT_NAME: Revas
+        INFOPLIST_FILE: Revas/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-framework"
+          - "Shared"
+          - "-lsqlite3"
+    preBuildScripts:
+      - name: Build Shared KMP framework
+        basedOnDependencyAnalysis: false
+        script: |
+          export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home)}"
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+
+  RevasTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: RevasTests
+    dependencies:
+      - target: Revas
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.revas.mobile.ios.tests
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Revas.app/Revas"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+
+  RevasUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: RevasUITests
+    dependencies:
+      - target: Revas
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.revas.mobile.ios.uitests
+        TEST_TARGET_NAME: Revas
+
+schemes:
+  Revas:
+    build:
+      targets:
+        Revas: all
+        RevasTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: false
+      targets:
+        - RevasTests
+        - RevasUITests

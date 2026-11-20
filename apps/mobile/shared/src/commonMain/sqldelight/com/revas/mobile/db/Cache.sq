@@ -1,0 +1,52 @@
+CREATE TABLE cachedAlert (
+  alertId TEXT NOT NULL PRIMARY KEY,
+  payloadJson TEXT NOT NULL,
+  cachedAt INTEGER NOT NULL
+);
+
+CREATE TABLE cachedCase (
+  caseId TEXT NOT NULL PRIMARY KEY,
+  payloadJson TEXT NOT NULL,
+  cachedAt INTEGER NOT NULL
+);
+
+CREATE TABLE syncState (
+  cacheKey TEXT NOT NULL PRIMARY KEY,
+  etag TEXT,
+  lastSyncedAt INTEGER NOT NULL
+);
+
+selectAlerts:
+SELECT * FROM cachedAlert ORDER BY cachedAt DESC;
+
+selectAlertById:
+SELECT * FROM cachedAlert WHERE alertId = ?;
+
+upsertAlert:
+INSERT OR REPLACE INTO cachedAlert(alertId, payloadJson, cachedAt) VALUES (?, ?, ?);
+
+trimAlerts:
+DELETE FROM cachedAlert WHERE alertId NOT IN (
+  SELECT alertId FROM cachedAlert ORDER BY cachedAt DESC LIMIT 500
+);
+
+deleteAlerts:
+DELETE FROM cachedAlert;
+
+selectCaseById:
+SELECT * FROM cachedCase WHERE caseId = ?;
+
+upsertCase:
+INSERT OR REPLACE INTO cachedCase(caseId, payloadJson, cachedAt) VALUES (?, ?, ?);
+
+deleteCases:
+DELETE FROM cachedCase;
+
+selectSyncState:
+SELECT * FROM syncState WHERE cacheKey = ?;
+
+upsertSyncState:
+INSERT OR REPLACE INTO syncState(cacheKey, etag, lastSyncedAt) VALUES (?, ?, ?);
+
+deleteSyncState:
+DELETE FROM syncState;
