@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { requestOrigin } from "@/lib/api/request-url";
 import { identityApiUrl, sessionCookieOptions } from "@/lib/auth/config";
 import { SESSION_COOKIE } from "@/lib/auth/constants";
 
@@ -12,7 +13,7 @@ function safeNext(value: FormDataEntryValue | null): string {
 }
 
 function errorRedirect(request: NextRequest, code: string, next: string) {
-  const url = new URL("/login", request.url);
+  const url = new URL("/login", requestOrigin(request));
   url.searchParams.set("error", code);
   if (next !== DEFAULT_NEXT) url.searchParams.set("next", next);
   return NextResponse.redirect(url, 303);
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     : 60 * 60 * 8;
 
   const redirectResponse = NextResponse.redirect(
-    new URL(next, request.url),
+    new URL(next, requestOrigin(request)),
     303,
   );
   redirectResponse.cookies.set(
