@@ -23,6 +23,7 @@ func NewProducer(brokers []string) (*Producer, error) {
 		kgo.RequiredAcks(kgo.AllISRAcks()),
 		kgo.MaxBufferedRecords(2000),
 		kgo.ProducerLinger(10*time.Millisecond),
+		kgo.AllowAutoTopicCreation(),
 	)
 	if err != nil {
 		return nil, err

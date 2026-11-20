@@ -506,6 +506,25 @@ h3 {
   border-bottom-color: currentColor;
 }
 
+.coverage-table {
+  min-width: 760px;
+}
+
+.rule-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.coverage-risk {
+  white-space: normal;
+  max-width: 360px;
+}
+
+.coverage-notice {
+  margin-top: 16px;
+}
+
 /* Badges */
 
 .badge {
@@ -575,6 +594,26 @@ h3 {
 .badge--sla-on_track {
   background: var(--ok-bg);
   color: var(--ok-ink);
+}
+
+.badge--verify-ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+
+.badge--verify-fail {
+  background: var(--high-bg);
+  color: var(--high-ink);
+}
+
+.badge--package-frozen {
+  background: var(--info-bg);
+  color: var(--info-ink);
+}
+
+.badge--package-open {
+  background: var(--medium-bg);
+  color: var(--medium-ink);
 }
 
 .flag-count {
@@ -710,7 +749,8 @@ h3 {
   text-align: right;
 }
 
-.flag-list {
+.flag-list,
+.evidence-list {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -718,7 +758,8 @@ h3 {
   gap: 12px;
 }
 
-.flag-card {
+.flag-card,
+.evidence-card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -726,7 +767,8 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.flag-card__head {
+.flag-card__head,
+.evidence-card__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -734,7 +776,8 @@ h3 {
   flex-wrap: wrap;
 }
 
-.flag-card__head h3 {
+.flag-card__head h3,
+.evidence-card__head h3 {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -784,6 +827,58 @@ h3 {
 .flag-card__details dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+/* Evidence package */
+
+.package-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+}
+
+.package-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.package-card__head h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+}
+
+.hash {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.verify-note {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.verify-note--ok {
+  background: var(--ok-bg);
+  color: var(--ok-ink);
+}
+
+.verify-note--fail {
+  background: var(--high-bg);
+  color: var(--high-ink);
 }
 
 .notice {

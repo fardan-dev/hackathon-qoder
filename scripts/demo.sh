@@ -157,7 +157,11 @@ echo "CLM-1001 trace events: $(jq -r '.events | length' <<<"$TRACE") stages: $(j
 step "Coverage and dashboard"
 COVERAGE=$(get "$REVIEWER" "$REPORTING/v1/coverage")
 echo "coverage typologies=$(jq -r '.typologies | length' <<<"$COVERAGE") covered=$(jq -r '[.typologies[] | select(.phase01_covered)] | length' <<<"$COVERAGE")"
-DASHBOARD=$(get "$REVIEWER" "$REPORTING/v1/dashboard")
+for _ in $(seq 1 30); do
+  DASHBOARD=$(get "$REVIEWER" "$REPORTING/v1/dashboard")
+  [[ $(jq -r '.decisions.total // 0' <<<"$DASHBOARD") -ge 1 ]] && break
+  sleep 1
+done
 echo "dashboard alerts=$(jq -r '.alerts.total' <<<"$DASHBOARD") decisions=$(jq -r '.decisions.total // 0' <<<"$DASHBOARD")"
 
 step "Close metering and export billing"
@@ -170,7 +174,7 @@ done
 CLOSE=$(post "$ADMIN" "$METERING/v1/metering/close" "$(jq -n --arg p "$PERIOD" '{period:$p}')")
 echo "usage period $PERIOD reconciliation_diff=$(jq -r .usage_record.reconciliation_diff <<<"$CLOSE") checksum=$(jq -r .usage_record.checksum <<<"$CLOSE")"
 VALUE=$(post "$ADMIN" "$METERING/v1/metering/value-report" "$(jq -n --arg p "$PERIOD" '{period:$p}')")
-echo "value report decisions=$(jq -r .decisions <<<"$VALUE") value_protected=$(jq -r .value_protected <<<"$VALUE") formula=$(jq -r .formula_version <<<"$VALUE")"
+echo "value report decisions=$(jq -r .payload.decisions <<<"$VALUE") value_protected=$(jq -r .payload.value_protected <<<"$VALUE") formula=$(jq -r .payload.formula_version <<<"$VALUE")"
 
 H1=/tmp/claimshield-billing-1.json
 H2=/tmp/claimshield-billing-2.json

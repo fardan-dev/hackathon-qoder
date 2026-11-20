@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { AlertTable } from "@/components/AlertTable";
+import { EvidencePackage } from "@/components/EvidencePackage";
 import { PriorityBadge } from "@/components/badges";
 import {
   buildQueueQuery,
@@ -13,6 +14,7 @@ import {
 import { formatIdr } from "@/lib/alerts/format";
 import { buildQueue } from "@/lib/alerts/queue";
 import { findAlertsByGroup } from "@/lib/alerts/repository";
+import { findCaseEvidence } from "@/lib/case/repository";
 
 const CASE_FILTERS: QueueFilters = {
   priority: "all",
@@ -47,7 +49,10 @@ export default async function CasePage({
   const backQuery = buildQueueQuery(parseQueueSearch(back));
 
   const now = new Date();
-  const alerts = await findAlertsByGroup(caseId, now);
+  const [alerts, evidence] = await Promise.all([
+    findAlertsByGroup(caseId, now),
+    findCaseEvidence(caseId, now),
+  ]);
   if (alerts.length === 0) notFound();
 
   const { rows } = buildQueue(alerts, CASE_FILTERS, now);
@@ -76,6 +81,13 @@ export default async function CasePage({
       </div>
 
       <AlertTable rows={rows} queueQuery={backQuery} />
+
+      {evidence ? (
+        <EvidencePackage
+          evidence={evidence}
+          claimIds={alerts.map((alert) => alert.claimId)}
+        />
+      ) : null}
 
       <aside className="notice" aria-label="Catatan kasus">
         <strong>Indikatif, bukan kesimpulan.</strong> Klaim pada kasus ini masih

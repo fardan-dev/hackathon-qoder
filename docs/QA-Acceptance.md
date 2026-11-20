@@ -27,9 +27,13 @@ Verified in the current working tree on 2026-11-20:
   `dataset_sha256=sha256:b8ee7d8956582bc2dcea23443b00c069293edb6f1af4a203ccccbc2f232efafa`,
   `output_hash=sha256:cd5c1af6e9707ad15310551640bcd434656ca8a6761a772c6d4662ed32994daf`,
   pack `2026.11.1`, engine `rulesengine-1.0.0`.
-- Web: lint, typecheck, 28/28 Vitest tests and `next build` pass.
-- Docker Compose end-to-end was **not** run here because the Docker daemon is
-  unavailable; `docker compose config --quiet` validates the configuration.
+- Web: lint, typecheck, 44/44 Vitest tests (including the UI copy guardrail)
+  and `next build` pass.
+- Clean-environment acceptance passes: `docker compose down -v`, then
+  `make up`, `make seed`, `make demo` on fresh volumes. 47 claims accepted,
+  CLM-1001 flags A3/A6/B4, audit chain valid over 128 events, dashboard
+  decisions=1, value report `AVS-v1` with value protected 20000000,
+  metering reconciliation diff 0, billing export reproducible.
 
 ## Test plan
 
@@ -41,6 +45,8 @@ Verified in the current working tree on 2026-11-20:
    case → evidence/package → decision → audit → coverage/dashboard → metering.
 4. Security review: authz tests, RLS/tenant guard inspection, PII redaction
    tests, secret-scan CI job.
+5. UI copy guard: `src/lib/copy-guard.test.ts` fails if conclusion wording
+   ("terbukti", "palsu", "fraud") appears in web source.
 
 ## Acceptance criteria
 
@@ -51,7 +57,7 @@ Verified in the current working tree on 2026-11-20:
 | AC-3 No automatic rejection | Pass | The engine returns flags only; no service or endpoint updates `ingestion.claim_raw.status`. Claim status in the source CSV is preserved through import and evaluation (verified by code inspection). |
 | AC-4 Planted-case recall, control FP gate | Pass | `TestControlClaimFalsePositiveGate`: 47 synthetic claims (33 positives, 14 controls), case recall 10000 bps, zero Must-rule false positives on controls; violations fail the test. Artifact: `backtest/fp-gate-report.json`. |
 | AC-5 Cross-batch detection | Pass | `TestCrossBatchHistoryFlags` loads prior history: old invoice triggers A1, prior CONFIRMED triggers G1, prior claim enters C4. |
-| AC-6 Coverage matrix + residual register | Pass | Seed loads 14 typologies (10 covered, 4 residual) in `cmd/seed/main.go`; `GET /v1/coverage` returns `summary` and `residual_risk_register`; `GET /v1/coverage/export` emits CSV. |
+| AC-6 Coverage matrix + residual register | Pass | Seed loads 14 typologies (10 covered, 4 residual) in `cmd/seed/main.go`; `GET /v1/coverage` returns `summary` and `residual_risk_register`; `GET /v1/coverage/export` emits CSV. The web `/coverage` page shows the same matrix read-only with a CSV download. |
 | AC-7 Determinism, diff 0 | Pass | `TestEngineDeterministic` (repeat + reordered input), `TestEngineOutputIndependentOfGroundTruth` (same output hash with labels removed); FP gate asserts stable dataset/output hashes. |
 | AC-8 Decisions and suppression audited | Pass | Decision, package, suppression approve/revoke events flow through the outbox to the hash-chained audit log; `GET /v1/audit/verify` and `/v1/audit/trace/{claimID}` expose the chain. `TestPackageHashDetectsTampering`, `TestSuppressionApprovalRoleGate`. |
 | AC-9 Document manipulation detection | N/A | H-family forensics are gated off in the thin slice; residual risk recorded in the coverage matrix. No claim of coverage. |
@@ -89,9 +95,8 @@ Critical findings: **0**. No open high-severity finding in the reviewed scope.
 
 ## Residual risks (ranked)
 
-1. Docker daemon was unavailable in the build environment, so `make up` and the
-   browser E2E demo were not executed here. Compose configuration validates
-   (`docker compose config --quiet`) and all unit/integration packages pass.
+1. The web queue and case pages read seeded mock data, not the live alert/case
+   APIs; the API path is verified by `scripts/demo.sh` instead.
 2. H-family document forensics are off (AC-9/11/12); the coverage matrix records
    this residual risk explicitly.
 3. No load/soak test was run; rate limiting is in-process per replica, so

@@ -10,12 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDeepLinkRequest
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import androidx.navigation.navOptions
 import com.revas.mobile.android.ui.alert.AlertDetailScreen
 import com.revas.mobile.android.ui.alert.AlertDetailViewModel
 import com.revas.mobile.android.ui.case.CaseDetailScreen
@@ -83,7 +85,10 @@ private fun AppNavHost(
 
     LaunchedEffect(deepLink) {
         if (deepLink != null) {
-            navController.navigate(deepLink, launchSingleTop = true)
+            navController.navigate(
+                NavDeepLinkRequest.Builder.fromUri(deepLink).build(),
+                navOptions { launchSingleTop = true },
+            )
         }
     }
 

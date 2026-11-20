@@ -86,10 +86,12 @@ func (s *api) handleEvent(ctx context.Context, env events.Envelope) error {
 	case pipeline.TopicBatchIngested:
 		if err := s.handleBatch(ctx, env); err != nil {
 			s.app.Log.Error("batch_evaluation_failed", "event_id", env.ID, "tenant_id", env.TenantID, "error", err.Error())
+			return err
 		}
 	case pipeline.TopicCaseDecided:
 		if err := s.applyDecision(ctx, env); err != nil {
 			s.app.Log.Error("decision_projection_failed", "event_id", env.ID, "error", err.Error())
+			return err
 		}
 	}
 	return nil

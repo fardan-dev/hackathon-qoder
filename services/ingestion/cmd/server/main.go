@@ -581,21 +581,29 @@ func (s *api) batchClaims(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
+		var base []rulesengine.ClaimSnapshot
 		for rows.Next() {
 			var c rulesengine.ClaimSnapshot
 			if err := rows.Scan(&c.ClaimID, &c.PolicyID, &c.ClaimantID, &c.ProviderID, &c.InvoiceNumber,
 				&c.LossType, &c.Status, &c.RepID, &c.ClaimDate, &c.IncidentDate, &c.ClaimedAmount, &c.Currency); err != nil {
+				rows.Close()
 				return err
 			}
 			c.TenantID = tenant
 			c.BatchID = batchID
-			if err := loadSnapshot(r.Context(), tx, tenant, &c); err != nil {
+			base = append(base, c)
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		for i := range base {
+			if err := loadSnapshot(r.Context(), tx, tenant, &base[i]); err != nil {
 				return err
 			}
-			claims = append(claims, c)
 		}
-		return rows.Err()
+		claims = append(claims, base...)
+		return nil
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		httpx.WriteProblem(w, r, http.StatusNotFound, "NOT_FOUND", "import batch not found")
