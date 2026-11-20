@@ -2,8 +2,9 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 SERVICES := identity ingestion rules alert case audit metering reporting
 TOOLS := migrate seed datasetgen
+TF_DIRS := infra/terraform/org infra/terraform/bootstrap infra/terraform/envs/dev infra/terraform/envs/staging infra/terraform/envs/prod
 
-.PHONY: help up web down ps logs build test test-race lint vet fmt tidy coverage migrate seed datasetgen fp-gate demo reset-demo clean ci
+.PHONY: help up web down ps logs build test test-race lint vet fmt tidy coverage migrate seed datasetgen fp-gate demo reset-demo clean ci tf-fmt tf-validate
 
 help:
 	@echo "up        start the full stack"
@@ -18,6 +19,8 @@ help:
 	@echo "migrate   apply database migrations locally"
 	@echo "test      run unit tests"
 	@echo "ci        vet + test + build all services"
+	@echo "tf-fmt    format Terraform stacks"
+	@echo "tf-validate validate Terraform stacks without cloud credentials"
 
 up:
 	$(COMPOSE) up --build -d
@@ -87,6 +90,17 @@ reset-demo:
 	./scripts/reset-demo.sh
 
 ci: vet test-race build
+
+tf-fmt:
+	terraform fmt -recursive infra/terraform
+
+tf-validate:
+	@mkdir -p $(HOME)/.terraform.d/plugin-cache; \
+	for dir in $(TF_DIRS); do \
+		echo "validating $$dir"; \
+		TF_PLUGIN_CACHE_DIR=$(HOME)/.terraform.d/plugin-cache terraform -chdir=$$dir init -backend=false -input=false >/dev/null || exit 1; \
+		TF_PLUGIN_CACHE_DIR=$(HOME)/.terraform.d/plugin-cache terraform -chdir=$$dir validate || exit 1; \
+	done
 
 clean:
 	rm -rf bin coverage.out coverage.html

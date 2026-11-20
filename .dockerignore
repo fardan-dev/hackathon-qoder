@@ -1,0 +1,24 @@
+.git
+.gitignore
+.github
+.env
+.env.*
+.DS_Store
+*.log
+
+# local build and test artifacts
+bin
+coverage.out
+coverage.html
+backtest
+tmp
+datasets/synthetic
+
+# web app builds in its own context (apps/web/Dockerfile)
+apps/web
+apps/mobile
+
+# documentation and infrastructure are not needed to build services
+docs
+infra
+README.md

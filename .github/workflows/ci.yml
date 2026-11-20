@@ -61,6 +61,27 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      TF_PLUGIN_CACHE_DIR: ${{ runner.temp }}/terraform-plugin-cache
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.12.2"
+          terraform_wrapper: false
+      - name: Format check
+        run: terraform fmt -check -recursive infra/terraform
+      - name: Validate stacks
+        run: |
+          set -euo pipefail
+          for dir in infra/terraform/org infra/terraform/bootstrap infra/terraform/envs/dev infra/terraform/envs/staging infra/terraform/envs/prod; do
+            echo "validating $dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+
   compose:
     runs-on: ubuntu-latest
     steps:

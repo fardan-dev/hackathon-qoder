@@ -39,7 +39,7 @@ Verified in the current working tree on 2026-11-20:
   session and returns to `/login`.
 - Clean-environment acceptance passes: `docker compose down -v`, then
   `make up`, `make seed`, `make demo` on fresh volumes. 47 claims accepted,
-  CLM-1001 flags A3/A6/B4, audit chain valid over 128 events, dashboard
+  CLM-1001 flags A3/A6/B4, audit chain valid over 131 events, dashboard
   decisions=1, value report `AVS-v1` with value protected 20000000,
   metering reconciliation diff 0, billing export reproducible.
 

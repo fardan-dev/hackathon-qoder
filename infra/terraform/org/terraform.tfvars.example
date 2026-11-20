@@ -1,0 +1,24 @@
+# Leave empty to run without a GCP organization: no folder and no org policies
+# are created (roles/orgpolicy.policyAdmin only exists at organization level).
+org_id          = ""
+billing_account = "CHANGE_ME-BILLING-ACCOUNT"
+quota_project   = "CHANGE_ME-QUOTA-PROJECT"
+folder_name     = "platform"
+name_prefix     = "ifd"
+region          = "asia-southeast2"
+budget_amount   = 500000
+budget_currency = "IDR"
+
+# Project IDs must be globally unique and must not exist yet. Any subset is allowed.
+project_ids = {
+  dev      = "CHANGE_ME-revas-ifd-dev"
+  staging  = "CHANGE_ME-revas-ifd-staging"
+  prod     = "CHANGE_ME-revas-ifd-prod"
+  shared   = "CHANGE_ME-revas-ifd-shared"
+  security = "CHANGE_ME-revas-ifd-security"
+  dr       = "CHANGE_ME-revas-ifd-dr"
+}
+
+tenant      = "platform"
+owner       = "platform-team"
+cost_center = "fraud-platform"
