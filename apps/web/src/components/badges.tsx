@@ -44,3 +44,19 @@ export function FlagCountBadge({ count }: { count: number }) {
     </span>
   );
 }
+
+export function HashBadge({ valid }: { valid: boolean }) {
+  return (
+    <span className={`badge badge--verify-${valid ? "ok" : "fail"}`}>
+      {valid ? "Hash cocok" : "Hash tidak cocok"}
+    </span>
+  );
+}
+
+export function PackageStateBadge({ frozen }: { frozen: boolean }) {
+  return (
+    <span className={`badge badge--package-${frozen ? "frozen" : "open"}`}>
+      {frozen ? "Dibekukan" : "Paket terbuka"}
+    </span>
+  );
+}
