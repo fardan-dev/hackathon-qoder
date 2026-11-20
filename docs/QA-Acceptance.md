@@ -28,8 +28,11 @@ Verified in the current working tree on 2026-11-20:
   `output_hash=sha256:cd5c1af6e9707ad15310551640bcd434656ca8a6761a772c6d4662ed32994daf`,
   pack `2026.11.1`, engine `rulesengine-1.0.0`.
 - Web: lint, typecheck, 28/28 Vitest tests and `next build` pass.
-- Docker Compose end-to-end was **not** run here because the Docker daemon is
-  unavailable; `docker compose config --quiet` validates the configuration.
+- Clean-environment acceptance passes: `docker compose down -v`, then
+  `make up`, `make seed`, `make demo` on fresh volumes. 47 claims accepted,
+  CLM-1001 flags A3/A6/B4, audit chain valid over 128 events, dashboard
+  decisions=1, value report `AVS-v1` with value protected 20000000,
+  metering reconciliation diff 0, billing export reproducible.
 
 ## Test plan
 
@@ -89,12 +92,13 @@ Critical findings: **0**. No open high-severity finding in the reviewed scope.
 
 ## Residual risks (ranked)
 
-1. Docker daemon was unavailable in the build environment, so `make up` and the
-   browser E2E demo were not executed here. Compose configuration validates
-   (`docker compose config --quiet`) and all unit/integration packages pass.
+1. The web queue and case pages read seeded mock data, not the live alert/case
+   APIs; the API path is verified by `scripts/demo.sh` instead.
 2. H-family document forensics are off (AC-9/11/12); the coverage matrix records
    this residual risk explicitly.
-3. No load/soak test was run; rate limiting is in-process per replica, so
+3. No automated UI copy lint blocks fraud-conclusion wording; the current copy is
+   reviewed manually.
+4. No load/soak test was run; rate limiting is in-process per replica, so
    horizontal scaling would need a shared limiter.
-4. No external penetration test; the security review above is code-level.
-5. Entitlement enforcement (AC-15) is not implemented in the thin slice.
+5. No external penetration test; the security review above is code-level.
+6. Entitlement enforcement (AC-15) is not implemented in the thin slice.

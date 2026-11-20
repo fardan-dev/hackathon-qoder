@@ -18,8 +18,9 @@ synthetic.
 | Reporting | http://localhost:8088 |
 | Postgres | localhost:5432 |
 | Kafka | localhost:9092 |
-| MinIO | http://localhost:9000 |
 | Web queue (optional) | http://localhost:3000 |
+
+Evidence artifacts are stored in Postgres; the thin slice does not run object storage.
 
 ## Prerequisites
 
@@ -140,7 +141,7 @@ original batch instead of creating duplicates.
 
 | Symptom | Check / fix |
 | --- | --- |
-| `make up` fails on port bind | Change `POSTGRES_PORT`, `KAFKA_PORT`, `REDIS_PORT`, `MINIO_PORT` in `.env`; stop the conflicting process. |
+| `make up` fails on port bind | Change `POSTGRES_PORT`, `KAFKA_PORT`, `REDIS_PORT` in `.env`; stop the conflicting process. |
 | Migrate container exits | `docker compose logs migrate`; fix the reported migration and rerun `make up`. |
 | Login returns 401 | Run `make seed`; confirm the password matches `SEED_*` in `.env` and that services were restarted after changing it. |
 | Import returns 422 | Inspect `errors` in the response or `GET /v1/imports/{batchID}`; ingestion validates references, dates and hashed identities instead of silently accepting bad rows. |

@@ -59,15 +59,13 @@ class AlertInboxViewModel @Inject constructor(
 
     fun selectSeverity(severity: Severity?) {
         if (_state.value.filter.severity == severity) return
-        _state.update {
-            it.copy(filter = it.filter.copy(severity = severity), loading = true, refreshing = true, error = null)
-        }
+        _state.update { it.copy(filter = it.filter.copy(severity = severity), error = null) }
         refresh(force = true)
     }
 
     fun toggleSlaOnly() {
         _state.update {
-            it.copy(filter = it.filter.copy(slaBreachedOnly = !it.filter.slaBreachedOnly), loading = true, refreshing = true, error = null)
+            it.copy(filter = it.filter.copy(slaBreachedOnly = !it.filter.slaBreachedOnly), error = null)
         }
         refresh(force = true)
     }
