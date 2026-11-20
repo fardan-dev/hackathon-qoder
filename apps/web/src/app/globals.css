@@ -506,6 +506,25 @@ h3 {
   border-bottom-color: currentColor;
 }
 
+.coverage-table {
+  min-width: 760px;
+}
+
+.rule-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.coverage-risk {
+  white-space: normal;
+  max-width: 360px;
+}
+
+.coverage-notice {
+  margin-top: 16px;
+}
+
 /* Badges */
 
 .badge {

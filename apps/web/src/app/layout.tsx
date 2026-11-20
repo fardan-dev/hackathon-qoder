@@ -36,6 +36,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/queue" className="nav-link">
                 Antrean Review
               </Link>
+              <Link href="/coverage" className="nav-link">
+                Coverage
+              </Link>
             </nav>
 
             <span className="env-badge">Thin slice · data sintetis</span>

@@ -27,7 +27,7 @@ Verified in the current working tree on 2026-11-20:
   `dataset_sha256=sha256:b8ee7d8956582bc2dcea23443b00c069293edb6f1af4a203ccccbc2f232efafa`,
   `output_hash=sha256:cd5c1af6e9707ad15310551640bcd434656ca8a6761a772c6d4662ed32994daf`,
   pack `2026.11.1`, engine `rulesengine-1.0.0`.
-- Web: lint, typecheck, 40/40 Vitest tests (including the UI copy guardrail)
+- Web: lint, typecheck, 44/44 Vitest tests (including the UI copy guardrail)
   and `next build` pass.
 - Clean-environment acceptance passes: `docker compose down -v`, then
   `make up`, `make seed`, `make demo` on fresh volumes. 47 claims accepted,
@@ -57,7 +57,7 @@ Verified in the current working tree on 2026-11-20:
 | AC-3 No automatic rejection | Pass | The engine returns flags only; no service or endpoint updates `ingestion.claim_raw.status`. Claim status in the source CSV is preserved through import and evaluation (verified by code inspection). |
 | AC-4 Planted-case recall, control FP gate | Pass | `TestControlClaimFalsePositiveGate`: 47 synthetic claims (33 positives, 14 controls), case recall 10000 bps, zero Must-rule false positives on controls; violations fail the test. Artifact: `backtest/fp-gate-report.json`. |
 | AC-5 Cross-batch detection | Pass | `TestCrossBatchHistoryFlags` loads prior history: old invoice triggers A1, prior CONFIRMED triggers G1, prior claim enters C4. |
-| AC-6 Coverage matrix + residual register | Pass | Seed loads 14 typologies (10 covered, 4 residual) in `cmd/seed/main.go`; `GET /v1/coverage` returns `summary` and `residual_risk_register`; `GET /v1/coverage/export` emits CSV. |
+| AC-6 Coverage matrix + residual register | Pass | Seed loads 14 typologies (10 covered, 4 residual) in `cmd/seed/main.go`; `GET /v1/coverage` returns `summary` and `residual_risk_register`; `GET /v1/coverage/export` emits CSV. The web `/coverage` page shows the same matrix read-only with a CSV download. |
 | AC-7 Determinism, diff 0 | Pass | `TestEngineDeterministic` (repeat + reordered input), `TestEngineOutputIndependentOfGroundTruth` (same output hash with labels removed); FP gate asserts stable dataset/output hashes. |
 | AC-8 Decisions and suppression audited | Pass | Decision, package, suppression approve/revoke events flow through the outbox to the hash-chained audit log; `GET /v1/audit/verify` and `/v1/audit/trace/{claimID}` expose the chain. `TestPackageHashDetectsTampering`, `TestSuppressionApprovalRoleGate`. |
 | AC-9 Document manipulation detection | N/A | H-family forensics are gated off in the thin slice; residual risk recorded in the coverage matrix. No claim of coverage. |
