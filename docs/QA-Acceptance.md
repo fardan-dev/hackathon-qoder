@@ -27,7 +27,8 @@ Verified in the current working tree on 2026-11-20:
   `dataset_sha256=sha256:b8ee7d8956582bc2dcea23443b00c069293edb6f1af4a203ccccbc2f232efafa`,
   `output_hash=sha256:cd5c1af6e9707ad15310551640bcd434656ca8a6761a772c6d4662ed32994daf`,
   pack `2026.11.1`, engine `rulesengine-1.0.0`.
-- Web: lint, typecheck, 28/28 Vitest tests and `next build` pass.
+- Web: lint, typecheck, 40/40 Vitest tests (including the UI copy guardrail)
+  and `next build` pass.
 - Clean-environment acceptance passes: `docker compose down -v`, then
   `make up`, `make seed`, `make demo` on fresh volumes. 47 claims accepted,
   CLM-1001 flags A3/A6/B4, audit chain valid over 128 events, dashboard
@@ -44,6 +45,8 @@ Verified in the current working tree on 2026-11-20:
    case → evidence/package → decision → audit → coverage/dashboard → metering.
 4. Security review: authz tests, RLS/tenant guard inspection, PII redaction
    tests, secret-scan CI job.
+5. UI copy guard: `src/lib/copy-guard.test.ts` fails if conclusion wording
+   ("terbukti", "palsu", "fraud") appears in web source.
 
 ## Acceptance criteria
 
@@ -96,9 +99,7 @@ Critical findings: **0**. No open high-severity finding in the reviewed scope.
    APIs; the API path is verified by `scripts/demo.sh` instead.
 2. H-family document forensics are off (AC-9/11/12); the coverage matrix records
    this residual risk explicitly.
-3. No automated UI copy lint blocks fraud-conclusion wording; the current copy is
-   reviewed manually.
-4. No load/soak test was run; rate limiting is in-process per replica, so
+3. No load/soak test was run; rate limiting is in-process per replica, so
    horizontal scaling would need a shared limiter.
-5. No external penetration test; the security review above is code-level.
-6. Entitlement enforcement (AC-15) is not implemented in the thin slice.
+4. No external penetration test; the security review above is code-level.
+5. Entitlement enforcement (AC-15) is not implemented in the thin slice.
