@@ -1,9 +1,25 @@
+import { redirect } from "next/navigation";
+
+import { isUnauthorized } from "@/lib/api/client";
+import { getSessionToken } from "@/lib/auth/session";
 import { coverageCsv } from "@/lib/coverage/coverage";
-import { listCoverage } from "@/lib/coverage/repository";
+import { getCoverage } from "@/lib/coverage/repository";
 
 export async function GET() {
-  const csv = coverageCsv(await listCoverage());
-  return new Response(csv, {
+  const token = await getSessionToken();
+  if (!token) redirect("/login?next=%2Fcoverage%2Fexport");
+
+  let rows;
+  try {
+    ({ rows } = await getCoverage(token));
+  } catch (error) {
+    if (isUnauthorized(error)) {
+      redirect("/login?next=%2Fcoverage%2Fexport");
+    }
+    throw error;
+  }
+
+  return new Response(coverageCsv(rows), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
       "Content-Disposition": 'attachment; filename="coverage-matrix.csv"',

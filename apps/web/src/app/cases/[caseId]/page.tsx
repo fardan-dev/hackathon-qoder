@@ -2,96 +2,251 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AlertTable } from "@/components/AlertTable";
 import { EvidencePackage } from "@/components/EvidencePackage";
-import { PriorityBadge } from "@/components/badges";
 import {
-  buildQueueQuery,
-  parseQueueSearch,
-  type QueueFilters,
-  type RawSearchParams,
-} from "@/lib/alerts/filters";
-import { formatIdr } from "@/lib/alerts/format";
-import { buildQueue } from "@/lib/alerts/queue";
-import { findAlertsByGroup } from "@/lib/alerts/repository";
-import { findCaseEvidence } from "@/lib/case/repository";
-
-const CASE_FILTERS: QueueFilters = {
-  priority: "all",
-  status: "all",
-  lossType: "all",
-  sla: "all",
-  q: "",
-};
+  CaseStatusBadge,
+  DecisionBadge,
+  FlagCountBadge,
+  PriorityBadge,
+} from "@/components/badges";
+import {
+  LOSS_TYPE_LABEL,
+  formatDateTimeWib,
+  formatIdr,
+  shortAlertId,
+} from "@/lib/alerts/format";
+import { ApiError } from "@/lib/api/client";
+import { redirectOnUnauthorized } from "@/lib/api/guard";
+import { requireSession } from "@/lib/auth/session";
+import { findCase } from "@/lib/case/repository";
 
 type Params = Promise<{ caseId: string }>;
-type SearchParams = Promise<RawSearchParams>;
 
 export async function generateMetadata({
   params,
 }: {
   params: Params;
 }): Promise<Metadata> {
-  const { caseId } = await params;
-  return { title: `Kasus ${caseId}` };
+  await params;
+  return { title: "Detail kasus" };
 }
 
-export default async function CasePage({
-  params,
-  searchParams,
-}: {
-  params: Params;
-  searchParams: SearchParams;
-}) {
+export default async function CasePage({ params }: { params: Params }) {
   const { caseId } = await params;
-  const raw = await searchParams;
-  const back = Array.isArray(raw.back) ? raw.back[0] : raw.back;
-  const backQuery = buildQueueQuery(parseQueueSearch(back));
+  const { token } = await requireSession(`/cases/${caseId}`);
+  const detail = await redirectOnUnauthorized(
+    findCase(token, caseId),
+    `/cases/${caseId}`,
+  ).catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 404) notFound();
+    throw error;
+  });
 
-  const now = new Date();
-  const [alerts, evidence] = await Promise.all([
-    findAlertsByGroup(caseId, now),
-    findCaseEvidence(caseId, now),
-  ]);
-  if (alerts.length === 0) notFound();
-
-  const { rows } = buildQueue(alerts, CASE_FILTERS, now);
-  const totalAmount = alerts.reduce(
-    (sum, alert) => sum + alert.claimedAmount,
+  const totalAmount = detail.claims.reduce(
+    (sum, claim) => sum + claim.claimedAmount,
     0,
   );
-  const topPriority = rows[0]?.priority ?? "LOW";
 
   return (
     <div className="page">
-      <Link href={`/queue${backQuery}`} className="back-link">
-        <span aria-hidden="true">←</span> Kembali ke antrean
+      <Link href="/cases" className="back-link">
+        <span aria-hidden="true">←</span> Kembali ke daftar kasus
       </Link>
 
       <div className="page-head">
         <div>
-          <p className="eyebrow">Case group</p>
-          <h1>Kasus {caseId}</h1>
+          <p className="eyebrow">Case {detail.caseId}</p>
+          <h1>{detail.title || `Kasus ${detail.caseId}`}</h1>
           <p className="lede">
-            {alerts.length} klaim terkait · total nilai {formatIdr(totalAmount)}.
-            Seluruh status klaim sumber tetap read-only.
+            {detail.summary || "Kasus tanpa ringkasan."} {detail.claims.length}{" "}
+            klaim terkait · total nilai {formatIdr(totalAmount)}.
           </p>
         </div>
-        <PriorityBadge priority={topPriority} />
+
+        <div className="detail-head__side">
+          <div className="badge-row">
+            <CaseStatusBadge status={detail.status} />
+            <PriorityBadge priority={detail.priority} />
+          </div>
+        </div>
       </div>
 
-      <AlertTable rows={rows} queueQuery={backQuery} />
+      <section className="panel" aria-labelledby="case-summary-heading">
+        <h2 id="case-summary-heading">Ringkasan kasus</h2>
+        <dl className="meta-grid">
+          <div>
+            <dt>Status</dt>
+            <dd>
+              <CaseStatusBadge status={detail.status} />
+            </dd>
+          </div>
+          <div>
+            <dt>Jumlah klaim</dt>
+            <dd>{detail.claimCount}</dd>
+          </div>
+          <div>
+            <dt>Dibuka</dt>
+            <dd>
+              <time dateTime={detail.createdAt}>
+                {formatDateTimeWib(detail.createdAt)}
+              </time>
+            </dd>
+          </div>
+          <div>
+            <dt>Diperbarui</dt>
+            <dd>
+              <time dateTime={detail.updatedAt}>
+                {formatDateTimeWib(detail.updatedAt)}
+              </time>
+            </dd>
+          </div>
+          <div>
+            <dt>Ditutup</dt>
+            <dd>
+              {detail.closedAt ? (
+                <time dateTime={detail.closedAt}>
+                  {formatDateTimeWib(detail.closedAt)}
+                </time>
+              ) : (
+                "—"
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>Bukti terbuka</dt>
+            <dd>{detail.hasOpenEvidence ? "Ya" : "Tidak"}</dd>
+          </div>
+        </dl>
+      </section>
 
-      {evidence ? (
+      <section aria-labelledby="case-claims-heading">
+        <div className="section-head">
+          <h2 id="case-claims-heading">Klaim terkait</h2>
+        </div>
+        <div className="table-wrap">
+          <table className="queue-table">
+            <caption className="sr-only">
+              Klaim pada kasus ini beserta alert dan flag terkait
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Prioritas</th>
+                <th scope="col">Klaim</th>
+                <th scope="col">Alert</th>
+                <th scope="col">Flag</th>
+                <th scope="col" className="num">
+                  Nilai klaim
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {detail.claims.map((claim) => (
+                <tr key={claim.claimId}>
+                  <td data-label="Prioritas">
+                    <PriorityBadge priority={claim.severity} />
+                  </td>
+                  <td data-label="Klaim">
+                    <span className="claim-id">{claim.claimId}</span>
+                    <span className="cell-sub">
+                      {LOSS_TYPE_LABEL[claim.lossType]}
+                    </span>
+                  </td>
+                  <td data-label="Alert">
+                    <Link
+                      className="row-link"
+                      href={`/alerts/${claim.alertId}`}
+                    >
+                      Buka {shortAlertId(claim.alertId)}
+                    </Link>
+                  </td>
+                  <td data-label="Flag">
+                    <FlagCountBadge count={claim.flags.length} />
+                    <span className="cell-sub">
+                      {claim.flags.map((flag) => flag.ruleId).join(" · ")}
+                    </span>
+                  </td>
+                  <td data-label="Nilai klaim" className="num">
+                    {formatIdr(claim.claimedAmount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {detail.evidence.length > 0 || detail.pkg ? (
         <EvidencePackage
-          evidence={evidence}
-          claimIds={alerts.map((alert) => alert.claimId)}
+          evidence={{
+            artifacts: detail.evidence,
+            pkg: detail.pkg,
+            verification: detail.verification,
+          }}
+          claimIds={detail.claims.map((claim) => claim.claimId)}
         />
-      ) : null}
+      ) : (
+        <section aria-labelledby="evidence-heading">
+          <h2 id="evidence-heading">Evidence package</h2>
+          <p className="hint">
+            Belum ada artefak bukti yang tercatat untuk kasus ini.
+          </p>
+        </section>
+      )}
+
+      <section aria-labelledby="decisions-heading">
+        <div className="section-head">
+          <h2 id="decisions-heading">Keputusan reviewer</h2>
+          <span className="chip">{detail.decisions.length} keputusan</span>
+        </div>
+
+        {detail.decisions.length > 0 ? (
+          <ol className="evidence-list">
+            {detail.decisions.map((decision) => (
+              <li key={decision.decisionId} className="evidence-card">
+                <div className="evidence-card__head">
+                  <h3>
+                    <DecisionBadge outcome={decision.outcome} />{" "}
+                    <span className="mono flag-card__rule">
+                      {decision.reasonCode || "—"}
+                    </span>
+                  </h3>
+                  <span className="flag-card__meta">
+                    <time dateTime={decision.decidedAt}>
+                      {formatDateTimeWib(decision.decidedAt)}
+                    </time>
+                  </span>
+                </div>
+
+                <dl className="flag-card__details">
+                  <div>
+                    <dt>Reviewer</dt>
+                    <dd className="mono">{decision.reviewerId}</dd>
+                  </div>
+                  <div>
+                    <dt>Nilai dilindungi</dt>
+                    <dd>{formatIdr(decision.valueProtected)}</dd>
+                  </div>
+                  <div>
+                    <dt>Nilai dipulihkan</dt>
+                    <dd>{formatIdr(decision.valueRecovered)}</dd>
+                  </div>
+                  <div>
+                    <dt>Catatan</dt>
+                    <dd>{decision.notes || "—"}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="hint">Belum ada keputusan tercatat pada kasus ini.</p>
+        )}
+      </section>
 
       <aside className="notice" aria-label="Catatan kasus">
         <strong>Indikatif, bukan kesimpulan.</strong> Klaim pada kasus ini masih
-        memerlukan verifikasi reviewer; tidak ada perubahan status otomatis.
+        memerlukan verifikasi reviewer; halaman ini tidak mengubah status klaim
+        di sistem sumber.
       </aside>
     </div>
   );

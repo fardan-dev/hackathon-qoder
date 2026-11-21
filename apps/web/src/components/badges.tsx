@@ -5,6 +5,7 @@ import {
 } from "@/lib/alerts/format";
 import type { AlertStatus, Severity } from "@/lib/alerts/schema";
 import type { SlaState } from "@/lib/alerts/sla";
+import { caseStatusLabel } from "@/lib/case/live";
 
 export function PriorityBadge({ priority }: { priority: Severity }) {
   return (
@@ -18,6 +19,24 @@ export function StatusBadge({ status }: { status: AlertStatus }) {
   return (
     <span className={`badge badge--status-${status.toLowerCase()}`}>
       {STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+export function CaseStatusBadge({ status }: { status: string }) {
+  const slug = status.toLowerCase().replaceAll("_", "-");
+  return (
+    <span className={`badge badge--case-${slug}`}>
+      {caseStatusLabel(status)}
+    </span>
+  );
+}
+
+export function DecisionBadge({ outcome }: { outcome: string }) {
+  const slug = outcome.toLowerCase().replaceAll("_", "-");
+  return (
+    <span className={`badge badge--decision-${slug}`}>
+      {outcome.replaceAll("_", " ")}
     </span>
   );
 }

@@ -28,7 +28,13 @@ export function addBusinessDays(from: Date, days: number): Date {
 export function slaDueAt(alert: {
   createdAt: string;
   flags: Flag[];
+  slaDueAt?: string;
 }): Date {
+  if (alert.slaDueAt) {
+    const provided = new Date(alert.slaDueAt);
+    if (!Number.isNaN(provided.getTime())) return provided;
+  }
+
   const created = new Date(alert.createdAt);
 
   switch (alertPriority(alert)) {

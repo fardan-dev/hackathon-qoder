@@ -1,8 +1,8 @@
 # Runbook — Demo & Local Deployment
 
-Thin-slice stack: Postgres, Kafka, Redis, MinIO, migrations, and eight Go
-services. The web queue is optional and runs separately. All demo data is
-synthetic.
+Thin-slice stack: Postgres, Kafka, Redis, migrations, and eight Go services.
+The Next.js web UI is an optional Compose profile (`web`) and talks to the
+services server-side using the logged-in session. All demo data is synthetic.
 
 ## Ports
 
@@ -18,14 +18,14 @@ synthetic.
 | Reporting | http://localhost:8088 |
 | Postgres | localhost:5432 |
 | Kafka | localhost:9092 |
-| Web queue (optional) | http://localhost:3000 |
+| Web UI (optional profile) | http://localhost:3000 |
 
 Evidence artifacts are stored in Postgres; the thin slice does not run object storage.
 
 ## Prerequisites
 
 - Docker Engine/Desktop with Compose v2 (`docker compose version`)
-- Go 1.24+, Node.js 20.9+ (only for the web app)
+- Go 1.24+, Node.js 20.9+ (only for running the web UI outside Compose)
 - `make`, `curl`, `jq`
 - ~4 GB free disk for images and volumes
 
@@ -37,10 +37,11 @@ only; change all passwords before exposing the stack.
 ```bash
 cp .env.example .env
 # edit .env: change SEED_* passwords, POSTGRES_PASSWORD, INTERNAL_TOKEN,
-# TENANT_SALT and MinIO credentials
+# TENANT_SALT
 make up
 make seed
 make datasetgen
+make web   # optional web UI
 ```
 
 `make up` builds the services, runs migrations, and waits for dependencies.
@@ -54,7 +55,36 @@ Check readiness:
 make ps
 curl -fsS http://localhost:8081/health
 for p in 8082 8083 8084 8085 8086 8087 8088; do curl -fsS "http://localhost:$p/health"; done
+curl -fsS http://localhost:3000/login >/dev/null   # only with make web
 ```
+
+## Web UI
+
+The web UI is read-only: queue, alert detail, cases/evidence, coverage CSV,
+and dashboard. It authenticates through the identity service, keeps the opaque
+token in an HttpOnly `claimshield_session` cookie on the web host, and calls
+the Go APIs server-side.
+
+```bash
+make web
+```
+
+Open http://localhost:3000 and log in with `reviewer@claimshield.local` and
+the `SEED_REVIEWER_PASSWORD` from `.env`. `make down` also stops the profile;
+omit `--profile web` when you do not want the UI.
+
+For local development outside Compose:
+
+```bash
+cd apps/web
+npm ci
+npm run dev   # http://localhost:3000
+```
+
+The defaults point at `localhost:8081/8084/8085/8088`. Override them with
+`IDENTITY_API_URL`, `ALERT_API_URL`, `CASE_API_URL`, and `REPORTING_API_URL`.
+Set `SESSION_COOKIE_SECURE=true` when serving over HTTPS. In Compose these URLs
+use the service names (`http://identity:8080`, and so on).
 
 ## Demo (≤ 5 minutes)
 
@@ -124,7 +154,7 @@ make reset-demo
 ```
 
 Full reset (destructive for local volumes only): stops the stack and deletes
-Postgres, Kafka, Redis and MinIO data:
+Postgres, Kafka, and Redis data:
 
 ```bash
 make reset
@@ -147,6 +177,9 @@ original batch instead of creating duplicates.
 | Import returns 422 | Inspect `errors` in the response or `GET /v1/imports/{batchID}`; ingestion validates references, dates and hashed identities instead of silently accepting bad rows. |
 | No alerts after import | Wait longer (consumer lag) and check `make logs`; confirm rules health on 8083 and Kafka health. |
 | `make demo` times out | `docker compose ps`; check service health and logs. Rerun after the stack is healthy. |
+| Web redirects to `/login` in a loop | Confirm identity is healthy and `IDENTITY_API_URL` points at the identity service; clear the `claimshield_session` cookie and log in again. |
+| Web shows upstream unavailable | Check `docker compose logs -f web` and that alert/case/reporting are healthy; `WEB_API_TIMEOUT_MS` defaults to 5000. |
+| Web login returns 429 | The identity rate limit is 5 attempts/minute per IP+email; wait one minute. |
 | Disk full | Remove old local images/volumes only after confirming they are not needed (`docker system df`). Never delete shared volumes blindly. |
 
 Logs: `make logs` follows the stack. For a single service:
@@ -159,6 +192,7 @@ From a fresh clone:
 ```bash
 cp .env.example .env   # set strong demo passwords
 make up && make seed && make demo
+make web               # optional: verify the read-only UI end to end
 ```
 
 Record the final lines (batch id, coverage, metering reconciliation and billing

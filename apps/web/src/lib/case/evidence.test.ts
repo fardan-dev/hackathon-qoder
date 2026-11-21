@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { packageHash, sha256Of, verifyPackage } from "./evidence";
 import { createMockEvidence } from "./mock-evidence";
-import { findCaseEvidence } from "./repository";
 
 const NOW = new Date("2026-11-20T10:00:00+07:00");
 
@@ -80,24 +79,3 @@ describe("verifyPackage", () => {
   });
 });
 
-describe("findCaseEvidence", () => {
-  it("returns an open package before freezing", async () => {
-    const view = await findCaseEvidence("CG-0002", NOW);
-
-    expect(view).toBeDefined();
-    expect(view?.pkg).toBeNull();
-    expect(view?.verification).toBeNull();
-    expect(view?.artifacts.length).toBeGreaterThan(0);
-  });
-
-  it("returns a verified package for a frozen case", async () => {
-    const view = await findCaseEvidence("CG-0003", NOW);
-
-    expect(view?.pkg).not.toBeNull();
-    expect(view?.verification?.valid).toBe(true);
-  });
-
-  it("returns undefined for an unknown case", async () => {
-    await expect(findCaseEvidence("CG-9999", NOW)).resolves.toBeUndefined();
-  });
-});

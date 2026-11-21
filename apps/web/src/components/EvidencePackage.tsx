@@ -1,6 +1,6 @@
 import { HashBadge, PackageStateBadge } from "@/components/badges";
 import { formatDateTimeWib } from "@/lib/alerts/format";
-import type { CaseEvidenceView } from "@/lib/case/repository";
+import type { CaseEvidenceView } from "@/lib/case/evidence";
 
 const ARTIFACT_LABEL: Record<string, string> = {
   policy_schedule: "Jadwal polis",
@@ -139,8 +139,12 @@ export function EvidencePackage({
                 <dt>Chain of custody</dt>
                 <dd>
                   {artifact.chainOfCustody.uploadedBy} ·{" "}
-                  {artifact.chainOfCustody.sourceSystem} · diterima{" "}
-                  {formatDateTimeWib(artifact.chainOfCustody.receivedAt)}
+                  {artifact.chainOfCustody.sourceSystem}
+                  {artifact.chainOfCustody.receivedAt
+                    ? ` · diterima ${formatDateTimeWib(
+                        artifact.chainOfCustody.receivedAt,
+                      )}`
+                    : ""}
                 </dd>
               </div>
               <div>

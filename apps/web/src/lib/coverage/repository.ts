@@ -1,7 +1,15 @@
-import { COVERAGE_ROWS, type CoverageRow } from "./coverage";
+import { apiGet } from "@/lib/api/client";
+import { reportingApiUrl } from "@/lib/api/config";
 
-// Swap point for the Go reporting service (`GET /v1/coverage`); thin slice
-// runs on the same seeded matrix as `cmd/seed`.
-export async function listCoverage(): Promise<CoverageRow[]> {
-  return COVERAGE_ROWS;
+import { parseCoverage, type CoverageView } from "./live";
+
+export type { CoverageView } from "./live";
+
+export async function getCoverage(token: string): Promise<CoverageView> {
+  const payload = await apiGet<unknown>(
+    reportingApiUrl(),
+    "/v1/coverage",
+    token,
+  );
+  return parseCoverage(payload);
 }

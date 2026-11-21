@@ -10,6 +10,7 @@ import {
   LOSS_TYPE_LABEL,
   formatDateTimeWib,
   formatIdr,
+  shortAlertId,
 } from "@/lib/alerts/format";
 import type { QueueRow } from "@/lib/alerts/queue";
 
@@ -55,7 +56,8 @@ export function AlertTable({
               <td data-label="Klaim">
                 <span className="claim-id">{alert.claimId}</span>
                 <span className="cell-sub">
-                  {LOSS_TYPE_LABEL[alert.lossType]} · {alert.alertId}
+                  {LOSS_TYPE_LABEL[alert.lossType]} ·{" "}
+                  {shortAlertId(alert.alertId)}
                 </span>
               </td>
               <td data-label="Flag">

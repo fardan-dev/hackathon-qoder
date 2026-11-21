@@ -24,6 +24,7 @@ export const STATUS_LABEL: Record<AlertStatus, string> = {
   IN_REVIEW: "In review",
   ESCALATED: "Eskalasi",
   SUPPRESSED: "Suppressed",
+  CLOSED: "Closed",
 };
 
 export const LOSS_TYPE_LABEL: Record<LossType, string> = {
@@ -39,6 +40,12 @@ export const SLA_LABEL: Record<SlaState, string> = {
 
 export function formatIdr(amount: number): string {
   return idrFormatter.format(amount);
+}
+
+export function shortAlertId(alertId: string): string {
+  return alertId.length > 26
+    ? `${alertId.slice(0, 18)}…${alertId.slice(-6)}`
+    : alertId;
 }
 
 export function formatDateTimeWib(value: string | Date): string {

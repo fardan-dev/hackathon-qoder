@@ -1,0 +1,2 @@
+bucket = "ifd-tfstate-dev-CHANGE_ME"
+prefix = "envs/dev"

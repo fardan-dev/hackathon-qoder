@@ -1,0 +1,7 @@
+project_id  = "CHANGE_ME-staging-project"
+environment = "staging"
+name_prefix = "ifd"
+region      = "asia-southeast2"
+tenant      = "platform"
+owner       = "platform-team"
+cost_center = "fraud-platform"

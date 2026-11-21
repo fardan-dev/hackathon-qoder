@@ -6,7 +6,7 @@ const sha256Pattern = /^sha256:[0-9a-f]{64}$/;
 export const chainOfCustodySchema = z.object({
   uploadedBy: z.string().min(1),
   sourceSystem: z.string().min(1),
-  receivedAt: z.iso.datetime(),
+  receivedAt: z.iso.datetime().optional(),
 });
 export type ChainOfCustody = z.infer<typeof chainOfCustodySchema>;
 
@@ -37,6 +37,12 @@ export interface PackageVerification {
   computed: string;
   artifactCount: number;
   checkedCount: number;
+}
+
+export interface CaseEvidenceView {
+  artifacts: EvidenceArtifact[];
+  pkg: EvidencePackage | null;
+  verification: PackageVerification | null;
 }
 
 export function sha256Of(content: string): string {

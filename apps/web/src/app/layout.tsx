@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { getCurrentUser } from "@/lib/auth/session";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +14,13 @@ export const metadata: Metadata = {
   description: "Antrean alert indikatif untuk reviewer klaim P&C.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="id">
       <body>
@@ -22,7 +30,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
         <header className="app-header">
           <div className="app-header__inner">
-            <Link href="/queue" className="brand">
+            <Link href={user ? "/queue" : "/login"} className="brand">
               <span className="brand__mark" aria-hidden="true">
                 TK
               </span>
@@ -32,14 +40,39 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               </span>
             </Link>
 
-            <nav aria-label="Navigasi utama" className="app-nav">
-              <Link href="/queue" className="nav-link">
-                Antrean Review
-              </Link>
-              <Link href="/coverage" className="nav-link">
-                Coverage
-              </Link>
-            </nav>
+            {user ? (
+              <>
+                <nav aria-label="Navigasi utama" className="app-nav">
+                  <Link href="/queue" className="nav-link">
+                    Antrean Review
+                  </Link>
+                  <Link href="/cases" className="nav-link">
+                    Kasus
+                  </Link>
+                  <Link href="/coverage" className="nav-link">
+                    Coverage
+                  </Link>
+                  <Link href="/dashboard" className="nav-link">
+                    Dashboard
+                  </Link>
+                </nav>
+
+                <div className="user-menu">
+                  <span className="user-menu__name">
+                    {user.displayName}
+                  </span>
+                  <span className="user-menu__role">{user.role}</span>
+                  <form action="/api/auth/logout" method="post">
+                    <button
+                      className="button button--header"
+                      type="submit"
+                    >
+                      Keluar
+                    </button>
+                  </form>
+                </div>
+              </>
+            ) : null}
 
             <span className="env-badge">Thin slice · data sintetis</span>
           </div>

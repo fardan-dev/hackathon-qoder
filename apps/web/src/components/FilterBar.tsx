@@ -17,6 +17,7 @@ const STATUS_OPTIONS = [
   { value: "IN_REVIEW", label: "In review" },
   { value: "ESCALATED", label: "Eskalasi" },
   { value: "SUPPRESSED", label: "Suppressed" },
+  { value: "CLOSED", label: "Closed" },
 ] as const;
 
 const LOSS_TYPE_OPTIONS = [

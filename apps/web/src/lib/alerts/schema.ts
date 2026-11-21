@@ -8,6 +8,7 @@ export const alertStatusSchema = z.enum([
   "IN_REVIEW",
   "ESCALATED",
   "SUPPRESSED",
+  "CLOSED",
 ]);
 export type AlertStatus = z.infer<typeof alertStatusSchema>;
 
@@ -30,11 +31,12 @@ export const alertSchema = z.object({
   claimId: z.string().min(1),
   groupId: z.string().nullable(),
   lossType: lossTypeSchema,
-  claimantId: z.string().min(1),
-  providerId: z.string().min(1),
+  claimantId: z.string().min(1).optional(),
+  providerId: z.string().min(1).optional(),
   claimedAmount: z.number().int().positive(),
   status: alertStatusSchema,
   createdAt: z.iso.datetime(),
+  slaDueAt: z.iso.datetime().optional(),
   flags: z.array(flagSchema).min(1),
 });
 export type Alert = z.infer<typeof alertSchema>;
