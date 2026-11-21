@@ -1,0 +1,2 @@
+bucket = "ifd-tfstate-staging-CHANGE_ME"
+prefix = "envs/staging"
